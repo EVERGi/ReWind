@@ -122,6 +122,3 @@ Huber et al. (2026). [Integrating geographic data into greenhouse gas emission f
 ## License
 
 This project is distributed under the BSD 3-Clause License. See the `LICENSE` file for full terms.
-
---
-If you'd like, I can (1) add real GitHub/Zenodo links, (2) add a short example that runs a specific function from the `REWIND` package, or (3) produce a short `requirements.txt` based on `pyproject.toml`.
