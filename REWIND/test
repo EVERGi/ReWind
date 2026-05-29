@@ -1,0 +1,8 @@
+import geopandas as gpd
+from pathlib import Path
+
+DATA_DIR = Path("c:/Users/dhuber/OneDrive - Vrije Universiteit Brussel/06_Publications/01_Articles/09_ReWind/Model/REWIND/REWIND/data")
+
+world = gpd.read_file(DATA_DIR / "ne_10m_admin_0_countries.dbf")
+
+print(world.columns)
