@@ -52,6 +52,19 @@ Notes
 - Large datasets (GIS, country-level inventories) can be heavy—ensure sufficient disk space and memory.
 - Check data licenses before redistribution; some sources in `REWIND/data/` may have restrictions.
 
+## Not included in this repository
+
+- ecoinvent datasets (licensed)
+- large external datasets such as GEBCO bathymetry (can be downloaded separately via: **GEBCO global bathymetry dataset (2024)**  
+  https://www.gebco.net/data_and_products/gridded_bathymetry_data/, File used: `GEBCO_2024_sub_ice_topo.nc`)
+
+## Reproducibility
+
+Due to licensing restrictions (e.g. ecoinvent) and the size of certain external datasets (e.g. bathymetry data), full reproduction of the European fleet assessment is not possible using this repository alone. 
+
+However, the provided code and example workflow allow users to execute the model on a reduced dataset and verify the implementation and calculation logic. The Zenodo archive provides the processed fleet-level datasets used in this study, enabling validation and comparison of results.
+
+
 ## Example Workflow
 
 1. Create and activate a Python virtual environment.
@@ -102,6 +115,9 @@ Please cite the project and any associated Zenodo record. Example BibTeX templat
 	url = {https://github.com/<OWNER>/<REPOSITORY>}
 }
 ```
+## Associated Publication
+
+Huber et al. (2026). [Integrating geographic data into greenhouse gas emission footprinting: a spatial analysis of European wind turbines]. *International Journal of Life Cycle Assessment*.
 
 ## License
 
