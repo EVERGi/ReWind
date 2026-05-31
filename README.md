@@ -6,11 +6,11 @@ Regionalized cradle-to-grave life cycle assessment (LCA) model for on- and offsh
 `ReWind` is a Python package and set of scripts to perform regionalized cradle-to-grave life cycle assessments for onshore and offshore wind projects in Europe. The code assembles component inventories, applies region-specific scaling and calculation methods, and produces impact estimates suitable for comparative analysis and research.
 
 Key features
-- On- & offshore wind energy
-- Introduction of novel offshore floating foundations
-- Regionalized inventory preparation
-- Support for onshore and offshore wind technologies
-- Reproducible, scriptable workflows for batch processing
+- Integrated modelling of onshore and offshore wind energy systems
+- Explicit representation of offshore foundation types, including floating systems
+- Spatially resolved life cycle inventory (LCI) modelling
+- Scalable workflows for large turbine fleets
+- Reproducible and script-based analysis pipeline
 
 ## Installation
 
@@ -64,7 +64,7 @@ Notes
 
 Due to licensing restrictions (e.g. ecoinvent) and the size of certain external datasets (e.g. bathymetry data), full reproduction of the European fleet assessment is not possible using this repository alone. 
 
-However, once the required external inputs — namely the ecoinvent database and the GEBCO bathymetry dataset — are provided in the `/data` directory (or the corresponding input paths defined in the scripts), the model can be fully executed using the supplied scripts. The included example workflow enables users to run the model on a reduced dataset and verify the implementation and calculation logic. 
+However, once the required external inputs — namely the ecoinvent database and the GEBCO bathymetry dataset — are provided in the `REWIND/data/` directory (or the corresponding input paths defined in the scripts), the model can be fully executed using the supplied scripts. The included example workflow enables users to run the model on a reduced dataset and verify the implementation and calculation logic. 
 
 In addition, the Zenodo archive provides the processed fleet-level datasets used in this study, allowing validation of the reported results and facilitating direct comparison with published values.
 
@@ -92,8 +92,7 @@ python example.py
 - Data licensing: Some input datasets may be proprietary or have redistribution limits — verify each dataset's license before sharing derived outputs.
 
 ## Data Availability
-The skript to analyze the data along with obtained results is provided via the following link on Zenodo:
-
+The scripts used to analyse the data, along with the resulting datasets, are available on Zenodo:
 	DOI: 10.5281/zenodo.17857554
 
 
