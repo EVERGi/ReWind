@@ -6,6 +6,8 @@ Regionalized cradle-to-grave life cycle assessment (LCA) model for on- and offsh
 `ReWind` is a Python package and set of scripts to perform regionalized cradle-to-grave life cycle assessments for onshore and offshore wind projects in Europe. The code assembles component inventories, applies region-specific scaling and calculation methods, and produces impact estimates suitable for comparative analysis and research.
 
 Key features
+- On- & offshore wind energy
+- Introduction of novel offshore floating foundations
 - Regionalized inventory preparation
 - Support for onshore and offshore wind technologies
 - Reproducible, scriptable workflows for batch processing
@@ -54,15 +56,17 @@ Notes
 
 ## Not included in this repository
 
-- ecoinvent datasets (licensed)
-- large external datasets such as GEBCO bathymetry (can be downloaded separately via: **GEBCO global bathymetry dataset (2024)**  
+- ecoinvent database, cut-off version 3.9.1 (licensed)
+- GEBCO bathymetry (can be downloaded separately via: **GEBCO global bathymetry dataset (2024)**  
   https://www.gebco.net/data_and_products/gridded_bathymetry_data/, File used: `GEBCO_2024_sub_ice_topo.nc`)
 
 ## Reproducibility
 
 Due to licensing restrictions (e.g. ecoinvent) and the size of certain external datasets (e.g. bathymetry data), full reproduction of the European fleet assessment is not possible using this repository alone. 
 
-However, the provided code and example workflow allow users to execute the model on a reduced dataset and verify the implementation and calculation logic. The Zenodo archive provides the processed fleet-level datasets used in this study, enabling validation and comparison of results.
+However, once the required external inputs — namely the ecoinvent database and the GEBCO bathymetry dataset — are provided in the `/data` directory (or the corresponding input paths defined in the scripts), the model can be fully executed using the supplied scripts. The included example workflow enables users to run the model on a reduced dataset and verify the implementation and calculation logic. 
+
+In addition, the Zenodo archive provides the processed fleet-level datasets used in this study, allowing validation of the reported results and facilitating direct comparison with published values.
 
 
 ## Example Workflow
@@ -83,36 +87,33 @@ python example.py
 - Geographic scope: The model and bundled data are configured for Europe; applying them outside Europe may produce invalid results.
 - Spatial resolution: Many regionalizations use coarse mappings and assumptions; results are intended for comparative research, not detailed site-level engineering.
 - Inventory completeness: Some component inventories use proxies or literature averages where itemized, measured data are not available.
-- Temporal scope: The model does not (currently) include full temporal dynamics for supply-chain changes or equipment degradation over time.
-- Uncertainty quantification: Uncertainties are not comprehensively propagated in all modules — users should treat point estimates with caution and run sensitivity analyses.
-- Validation: The model has limited validation against ground-truth project-level LCAs; validate results against other studies before use in policy or investment decisions.
+- Validation: The model has been validated on a country-level accross Europe. Results are provided in the paper.
 - External dependencies: Geospatial packages (e.g. `geopandas`, `rasterio`) may require system-level libraries which are outside of Python's control.
 - Data licensing: Some input datasets may be proprietary or have redistribution limits — verify each dataset's license before sharing derived outputs.
 
-## Data Availability (GitHub + Zenodo)
+## Data Availability
+The skript to analyze the data along with obtained results is provided via the following link on Zenodo:
 
-- GitHub: the most recent source code and (small) example data are available from this repository. Replace the placeholder below with your repository URL:
+	DOI: 10.5281/zenodo.17857554
 
-	https://github.com/<OWNER>/<REPOSITORY>
-
-- Zenodo: If you have a DOI-archived snapshot, link it here (example placeholder):
-
-	DOI: 10.5281/zenodo.YOUR_DOI_HERE
-
-Include persistent links to the data snapshots you used for any published analyses.
 
 ## Citation
 
-Please cite the project and any associated Zenodo record. Example BibTeX template (fill in authors, year, title, version, DOI):
+Please cite the project and any associated Zenodo record.
 
 ```bibtex
 @misc{ReWind2026,
-	author = {Author, A. and Contributor, B.},
-	title = {ReWind: Regionalized cradle-to-grave LCA model for wind energy},
-	year = {2026},
-	howpublished = {Zenodo},
-	doi = {10.5281/zenodo.YOUR_DOI_HERE},
-	url = {https://github.com/<OWNER>/<REPOSITORY>}
+  author       = {Huber, Dominik},
+  title        = {Climate change impacts and annual electricity
+                   production of all wind turbines installed in
+                   Europe until 2020
+                  },
+  month        = dec,
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {0.2},
+  doi          = {10.5281/zenodo.17857554},
+  url          = {https://doi.org/10.5281/zenodo.17857554},
 }
 ```
 ## Associated Publication
