@@ -21,8 +21,7 @@ def transfo_500mva():
     mybio, eidb = ecoinvent_setup(_DATA_DIR / "datasets")
     
     # Check if the transformer dataset already exists
-    #existing_transfo = [act for act in eidb if 'Power transformer TrafoStar 500 MVA' in act['name']]
-    existing_transfo = [bd.get_activity(code=(get_activities_from_names(eidb, ['Power transformer TrafoStar 500 MVA'])[0]).code)]
+    existing_transfo = [act for act in eidb if 'Power transformer TrafoStar 500 MVA' in act['name']]
     
     if not existing_transfo:  # If the dataset does not exist, create it
         # Find the base activity
@@ -77,8 +76,7 @@ def transfo_10mva():
     mybio, eidb = ecoinvent_setup(_DATA_DIR / "datasets")
     
     # Check if the transformer dataset exists
-    #existing_transfo = [act for act in eidb if 'Power transformer TrafoStar 10 MVA' in act['name']]
-    existing_transfo = [bd.get_activity(code=(get_activities_from_names(eidb, ['Power transformer TrafoStar 10 MVA'])[0]).code)]
+    existing_transfo = [act for act in eidb if 'Power transformer TrafoStar 10 MVA' in act['name']]
     
     if not existing_transfo:  # If the dataset does not exist, create it
         # Find the dataset for the 500 MVA transformer as a base

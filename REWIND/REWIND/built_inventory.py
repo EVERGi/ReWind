@@ -229,7 +229,7 @@ def create_dictionary_update(P, lon, lat, d = None, h = None,  M_tower = None, M
 
         # If no matches, or more than 1 match, create a new activity
         elif not matching_activities:
-            lus_onshore = eidb.new_activity(name='land use for onshore wind turbines', unit='unit', location=iso_code, amount=1.0, type='production', product='land use for onshore wind turbines', code=random.randint(10000, 100000))
+            lus_onshore = eidb.new_activity(name='land use for onshore wind turbines', unit='unit', location=iso_code, amount=1.0, type='process', product='land use for onshore wind turbines', code=random.randint(10000, 100000))
             lus_onshore.save()
 
             # Repeat adding biosphere exchanges (code same as above)
@@ -667,7 +667,7 @@ def create_wind_lca_dk(P, lon, lat, d = None, h = None,  M_tower = None, M_found
 
         # If no matches, or more than 1 match, create a new activity
         elif not matching_activities:
-            lus_onshore = eidb.new_activity(name='land use for onshore wind turbines', unit='unit', location=iso_code, amount=1.0, type='production', product='land use for onshore wind turbines', code=random.randint(10000, 100000))
+            lus_onshore = eidb.new_activity(name='land use for onshore wind turbines', unit='unit', location=iso_code, amount=1.0, type='process', product='land use for onshore wind turbines', code=random.randint(10000, 100000))
             lus_onshore.save()
 
             # Repeat adding biosphere exchanges (code same as above)
@@ -1103,7 +1103,7 @@ def create_dictionary_for_monte_carlo(P, lon, lat, d = None, h = None,  M_tower 
 
         # If no matches, or more than 1 match, create a new activity
         elif not matching_activities:
-            lus_onshore = eidb.new_activity(name='land use for onshore wind turbines', unit='unit', location=iso_code, amount=1.0, type='production', product='land use for onshore wind turbines', code=random.randint(10000, 100000))
+            lus_onshore = eidb.new_activity(name='land use for onshore wind turbines', unit='unit', location=iso_code, amount=1.0, type='process', product='land use for onshore wind turbines', code=random.randint(10000, 100000))
             lus_onshore.save()
 
             # Repeat adding biosphere exchanges (code same as above)

@@ -30,6 +30,11 @@ _TURBINE_RATED_POWERS = [30, 150, 600, 800, 2000]
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 
 def ecoinvent_setup(ei_path):
+    # Handle the case where 7z extraction created a nested datasets/datasets/ folder
+    ei_path = Path(ei_path)
+    if not list(ei_path.glob("*.spold")) and (ei_path / "datasets").exists():
+        ei_path = ei_path / "datasets"
+
     # Check if the project exists; create it if not
     if 'wimby' not in bd.projects:
         bd.projects.create_project('wimby')
@@ -38,9 +43,33 @@ def ecoinvent_setup(ei_path):
     # Setup biosphere database
     mybio = "biosphere3"
     if mybio not in bd.databases:
-        bi.bw2setup()
+        try:
+            bi.bw2setup()
+        except ValueError as e:
+            if 'biosphere3' not in bd.databases:
+                raise
+            # bw2data 4.7 / bw2io 0.9.17 mismatch: biosphere3 was created but default
+            # LCIA methods failed. Fixed by patching normalize_ids below.
+            print(f"Note: bw2setup LCIA step failed ({e.__class__.__name__}). Will fix below.")
         print("Biosphere database set up successfully.")
         mybio = bd.Database('biosphere3')
+
+    # Install LCIA methods if missing (bw2data 4.7 / bw2io 0.9.17 compatibility fix)
+    # Method.write() rejects list-format keys; patch it to convert lists to tuples first.
+    if len(bd.methods) < 100:
+        from bw2data.method import Method
+        _orig_write = Method.write
+
+        def _patched_write(self, data, process=True):
+            fixed = [
+                ((tuple(line[0]),) + tuple(line[1:])) if isinstance(line[0], list) else line
+                for line in data
+            ]
+            return _orig_write(self, fixed, process=process)
+
+        Method.write = _patched_write
+        bi.create_default_lcia_methods(overwrite=True)
+        Method.write = _orig_write  # restore
     
     # Setup ecoinvent database
     eidb = "ecoinvent-391-cutoff"

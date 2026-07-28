@@ -51,7 +51,7 @@ Place required data files under `REWIND/data/` or provide a path to your data wh
 
 Notes
 - Shapefiles must be complete (all component files present) and encoded in a common CRS (WGS84 recommended).
-- Large datasets (GIS, country-level inventories) can be heavy—ensure sufficient disk space and memory.
+- Large datasets (GIS, country-level inventories) can be heavy; ensure sufficient disk space and memory.
 - Check data licenses before redistribution; some sources in `REWIND/data/` may have restrictions.
 
 ## Not included in this repository
@@ -64,7 +64,7 @@ Notes
 
 Due to licensing restrictions (e.g. ecoinvent) and the size of certain external datasets (e.g. bathymetry data), full reproduction of the European fleet assessment is not possible using this repository alone. 
 
-However, once the required external inputs — namely the ecoinvent database and the GEBCO bathymetry dataset — are provided in the `REWIND/data/` directory (or the corresponding input paths defined in the scripts), the model can be fully executed using the supplied scripts. The included example workflow enables users to run the model on a reduced dataset and verify the implementation and calculation logic. 
+However, once the required external inputs (namely the ecoinvent database and the GEBCO bathymetry dataset) are provided in the `REWIND/data/` directory (or the corresponding input paths defined in the scripts), the model can be fully executed using the supplied scripts. The included example workflow enables users to run the model on a reduced dataset and verify the implementation and calculation logic. 
 
 In addition, the Zenodo archive provides the processed fleet-level datasets used in this study, allowing validation of the reported results and facilitating direct comparison with published values.
 
@@ -89,7 +89,7 @@ python example.py
 - Inventory completeness: Some component inventories use proxies or literature averages where itemized, measured data are not available.
 - Validation: The model has been validated on a country-level accross Europe. Results are provided in the paper.
 - External dependencies: Geospatial packages (e.g. `geopandas`, `rasterio`) may require system-level libraries which are outside of Python's control.
-- Data licensing: Some input datasets may be proprietary or have redistribution limits — verify each dataset's license before sharing derived outputs.
+- Data licensing: Some input datasets may be proprietary or have redistribution limits; verify each dataset's license before sharing derived outputs.
 
 ## Data Availability
 The scripts used to analyse the data, along with the resulting datasets, are available on Zenodo:

@@ -1,0 +1,45 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Package build artifacts
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+rewind_env/
+venv/
+.venv/
+env/
+
+# Pickle caches — regenerated automatically by the code
+*.pkl
+
+# Ecoinvent raw dataset files — 21 000+ spold files, too large for git
+REWIND/REWIND/data/datasets/
+
+# Large geographic/climate data files
+*.nc
+*.7z
+
+# Incomplete downloads
+*.part
+
+# Shared reference folder — large files, not source code
+Shared_Rewind/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS clutter
+.DS_Store
+Thumbs.db
+
+# Third-party reference PDFs
+IJLCA_ReWind_Huber_2025_manuscript_5.pdf
+s11367-021-01993-z.pdf
+
+# Scratch run logs
+logs/
