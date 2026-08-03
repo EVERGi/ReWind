@@ -1719,3 +1719,129 @@ entirely to using fleet-average transport distances rather than per-turbine loca
 factorisations via `redo_lci`, delivering 0% error with a 2.3× speedup (measured: 581s vs 1337s
 baseline for 50 turbines); the remaining bottleneck is the per-turbine inventory-building step,
 which still scales O(N).
+
+## Completed 31 Jul 2026: buses.csv had zero coverage for 5 countries, replaced fleet-wide with a direct OSM substation lookup
+
+`buses.csv` (PyPSA-Eur's transmission-bus extraction, used by `calculate_closest_distance()`
+for cable length) has zero points in Belarus, Cyprus, the Faroe Islands, Iceland, and Kosovo.
+PyPSA-Eur documents excluding these on purpose: they're non-synchronous or otherwise isolated
+grids outside the interconnected European system it models. Turbines in these 5 countries were
+getting "nearest bus" distances of 86-1047 km, since the nearest point in `buses.csv` was
+sometimes an entire country away.
+
+### First attempt: Gridfinder, rejected
+
+Gridfinder (Arderne et al. 2020, Zenodo DOI 10.5281/zenodo.3538890) ships a global grid-line
+layer, `grid.gpkg`, tagging each line `source` = `openstreetmap` (real, mapped) or `gridfinder`
+(statistically predicted). Built `extract_missing_country_grid_points.py` to clip this to the 5
+missing countries' turbine locations and densify the lines into points.
+
+Before trusting it, checked whether Gridfinder's real (`openstreetmap`-sourced) lines actually
+agree with `buses.csv` across the 33 countries where both exist
+(`compare_gridfinder_vs_buses.py`). They didn't: `buses.csv` mean 20,361 m vs. Gridfinder mean
+4,457 m, an 84% median gap, in nearly every country. `grid.gpkg` has no voltage attribute, so
+the clipped lines include every distribution line down to local medium-voltage, while
+`buses.csv` only has transmission substations (220-440 kV). Distribution lines are everywhere;
+transmission substations are sparse. Not a fixable calibration issue, a difference in what's
+being measured. Dropped this approach, deleted the script and its output once the replacement
+below was working.
+
+### Second attempt: query OpenStreetMap directly for voltage-tagged lines and substations
+
+Queried the Overpass API directly for `power=line` and `power=substation` elements that carry a
+`voltage` tag, so only transmission-grade infrastructure counts (`extract_osm_hv_grid_points.py`).
+Small/isolated grids don't necessarily reach the same voltage tiers as interconnected mainland
+Europe, so the first version kept only the single highest voltage tier found in each country.
+
+This broke badly for Belarus: its highest tier is a 750 kV line, a rare long-haul
+interconnector, and restricting the search to only that tier gave a mean distance of 180,210 m
+for its 12 turbines, nowhere near a normal cable length. Fixed by capping the threshold at
+220 kV (matching `buses.csv`'s own 220-440 kV range) while still falling back to a country's own
+top tier if it never reaches 220 kV (Cyprus tops out at 132 kV, the Faroe Islands at 200 kV).
+Belarus's mean dropped to 21,308 m once 400/330/220 kV lines were included alongside the 750 kV
+one.
+
+Ran the same voltage-tiered query across the 33 already-covered countries
+(`compare_osm_hv_vs_buses.py`) to check the method itself, not just the threshold fix: `buses.csv`
+mean 20,531 m vs. this method's 13,055 m, 36% median gap, undershooting in 25 of 27 countries
+that returned data (DE, FR, GR timed out repeatedly on Overpass and were skipped that pass).
+Better than Gridfinder's 84%, still a real bias, in the same direction: a `power=line` way's
+vertices run continuously along its route, so the nearest vertex to a turbine is almost always
+closer than the nearest actual substation, `buses.csv`'s unit of measurement.
+
+### Final approach: substations only, rolled out to all 38 countries
+
+Dropped `power=line` from the query entirely, keeping only `power=substation` (`node`, plus
+`way` reduced to its centroid). Re-ran the 33-country check: `buses.csv` mean 18,703 m vs. 22,078
+m, 24.9% median gap, and most countries landed within a few percent (15 of 30 under 2%,
+including Germany, Spain, Britain, Italy, Poland). A handful of small countries with thin OSM
+substation tagging (North Macedonia, Bosnia, Switzerland, Montenegro) diverged a lot in
+percentage terms, but they're tiny fleets (16-55 turbines each) that barely move a fleet-wide
+average.
+
+Decided to use this consistently for every one of the 38 fleet countries, not just patch the 5
+missing ones, so cable length is computed the same way everywhere rather than "PyPSA-Eur lookup
+for 33 countries, something else for 5." Turbine-count-weighted across the 33 already-covered
+countries, `buses.csv` and the OSM method differ by only about 1.2% overall (17,926 m vs.
+18,150 m). The biggest fleets (Germany, Spain, Britain, France, Denmark, Italy) all agree to
+within a few percent, which is what actually matters for total fleet GWP.
+
+Built `extract_osm_hv_substations_all_countries.py` to query all 38 countries and pool the
+results into one file, `osm_hv_substations_all_countries.csv`, in `buses.csv`'s own column
+layout so it's a drop-in replacement. Large countries (Germany, France, Britain, Italy, Greece)
+returned too many elements for a single bounding-box query to finish before Overpass's server
+timeout, so the script retries and then recursively splits a stubborn bbox into quadrants.
+France needed this: its first two attempts came back HTTP 200 with an empty result and a
+`remark` field reading "Query timed out" buried in the JSON body, not an HTTP error code, so the
+first version of the script accepted it as "zero substations found" and moved on. Fixed by
+checking for that `remark` and treating it as a retry/split trigger like any other failure.
+Final count: 10,146 substations across all 38 countries.
+
+### The bug that actually mattered: the exact baseline never stopped reading buses.csv
+
+`precompute_geo_columns.py`'s `vectorized_dist_to_grid()` was repointed at the new file, which
+is what `fleet_evaluation_lca_algebraic.py` (the surrogate model) reads through
+`geo_precomputed`. The exact, non-algebraic baseline (`fleet_evaluation_v03_elie.py`) does not
+go through `geo_precomputed` for cable length at all: it calls
+`calculate_closest_distance(lon, lat)` in `prepare_inventories.py`, which reads `buses.csv`
+directly on every call, a pre-existing function untouched since before this whole project.
+Regenerating the baseline CSVs for the 5 validated countries (DE, DK, GB, BE, NO) the first time
+changed nothing, because that function was still reading the old file no matter how many times
+it was re-run.
+
+Found this from the validation numbers, not by reading the code first: after switching the
+algebraic model to the new grid data, Germany's onshore validation abs-max error jumped to
+57.3%, Belgium's to 60.0%, Britain's to 20.7%, while Denmark and Norway stayed under 1% as
+always. Traced the worst Germany turbine (idx 41446): the new OSM-based distance is 22,764 m,
+but `calculate_closest_distance()` for that exact point still returned 4,754 m, straight from
+`buses.csv`. The algebraic side had the new number, the baseline side didn't, and the two were
+being compared as if they should match.
+
+Fix: pointed `calculate_closest_distance()` at `osm_hv_substations_all_countries.csv` instead of
+`buses.csv` (same column layout, one-line change). Regenerated the 5 baseline CSVs again, then
+re-ran the full 38-country algebraic batch. Errors came back down to the same tight band as
+before the whole exercise started:
+
+| Country/part | Total-stage abs-max, before this fix | after |
+|---|---|---|
+| DE onshore | 57.26% | 1.09% |
+| GB onshore | 20.72% | 0.02% |
+| BE onshore | 60.02% | 0.30% |
+| DK onshore | 0.31% | 0.21% |
+| NO onshore | 0.18% | 0.11% |
+
+One outlier survived, unrelated to any of this: Germany's offshore Monopile/Semi-submersible
+buckets still show 35.8%/17.8% abs-max error, isolated to 3 turbines and 2 niche categories
+("climate change: biogenic", freshwater eutrophication) where both baseline and algebraic values
+are near zero (~2e-5) to begin with, so a tiny absolute difference reads as a large percentage.
+Same category, same kind of artifact as the DE offshore case already logged under "Completed 27
+Jul 2026" above; not connected to cable length, not worth chasing.
+
+### Cleanup
+
+Deleted `extract_missing_country_grid_points.py` and its output
+(`grid_supplement_precomputed.csv`), the rejected Gridfinder approach, and
+`osm_hv_supplement_precomputed.csv`, an intermediate 5-country-only version of the OSM
+extraction superseded by the 38-country file. `grid.gpkg` (692 MB, the raw Gridfinder download)
+added to `.gitignore`: never belonged in git, was never tracked, just needed excluding
+explicitly.

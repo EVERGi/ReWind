@@ -22,7 +22,7 @@ bd.projects.set_current('wimby')
 eu_wind_turbines = pd.read_excel(_DATA_DIR / "EU_turbines_input_data.xlsx", sheet_name="EU_turbines_input_data")
 print(f"Total turbines before filtering: {eu_wind_turbines.shape[0]}")
 
-selected_countries = ['NO', 'DE', 'GB']
+selected_countries = ['NO', 'DE', 'GB', 'DK', 'BE']
 
 # Per-country sample sizes for the 21 Jul 2026 multi-country confirmation batch, chosen to
 # total ~148 turbines across NO/DE/GB (covers onshore + all 3 offshore foundation buckets:

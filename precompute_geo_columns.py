@@ -60,8 +60,16 @@ def haversine_m(lat1, lon1, lat2, lon2):
 
 
 def vectorized_dist_to_grid(lons, lats):
-    """All-turbines-at-once equivalent of prepare_inventories.calculate_closest_distance(lon, lat)."""
-    buses = pd.read_csv(_DATA_DIR / "buses.csv")
+    """All-turbines-at-once equivalent of prepare_inventories.calculate_closest_distance(lon, lat).
+
+    Uses osm_hv_substations_all_countries.csv rather than buses.csv: buses.csv (PyPSA-Eur's
+    transmission-bus extraction) has zero coverage for 5 fleet countries (BY, CY, FO, IS, XK,
+    see NEXT_STEPS_lca_algebraic.md), while the OSM-derived file covers all 38 fleet countries
+    with one consistent method (real power=substation points, voltage >= 220 kV or a country's
+    own top tier if it never reaches that -- validated against buses.csv in
+    compare_osm_hv_vs_buses.py: within a few percent for the large majority of the 30
+    already-covered countries checked, see PLAN_lca_algebraic.md "Completed 30 Jul 2026")."""
+    buses = pd.read_csv(_DATA_DIR / "osm_hv_substations_all_countries.csv")
     bus_lon = buses['x'].values[None, :]
     bus_lat = buses['y'].values[None, :]
     t_lon = np.asarray(lons, dtype=float)[:, None]
@@ -105,24 +113,30 @@ def vectorized_transport_distances(lons, lats):
 
 
 def validate_against_originals(dk_onshore, n_sample=15, seed=42):
-    """Cross-check the vectorized functions against the original per-turbine ones on a random sample."""
+    """Cross-check vectorized_transport_distances against the original per-turbine
+    calculate_minimum_aggregated_distances() on a random sample: same manufacturer-location
+    source file both ways, so this catches vectorization/approximation error specifically.
+
+    dist_to_grid is NOT checked here anymore: vectorized_dist_to_grid now reads
+    osm_hv_substations_all_countries.csv (all 38 fleet countries, one consistent method --
+    see PLAN_lca_algebraic.md "Completed 30 Jul 2026"), while the original
+    calculate_closest_distance() in prepare_inventories.py still reads buses.csv directly.
+    Comparing the two would measure "how different are these two datasets", not vectorization
+    error, and buses.csv itself has zero coverage for 5 fleet countries anyway."""
     sys.path.insert(0, str(_REWIND_DIR))
     from scaling import calculate_minimum_aggregated_distances
-    from prepare_inventories import calculate_closest_distance
 
     sample = dk_onshore.sample(n_sample, random_state=seed)
     lons = sample['Longitude'].values
     lats = sample['Latitude'].values
 
     rotor_v, nacelle_v, tower_v, found_v = vectorized_transport_distances(lons, lats)
-    grid_v = vectorized_dist_to_grid(lons, lats)
 
     max_rel_err = 0.0
     for i, (lo, la) in enumerate(zip(lons, lats)):
         orig = calculate_minimum_aggregated_distances(lo, la)
         r_o, n_o, t_o = orig.iloc[0, 1], orig.iloc[1, 1], orig.iloc[2, 1]
-        g_o = calculate_closest_distance(lo, la)
-        for orig_val, vec_val in [(r_o, rotor_v[i]), (n_o, nacelle_v[i]), (t_o, tower_v[i]), (g_o, grid_v[i])]:
+        for orig_val, vec_val in [(r_o, rotor_v[i]), (n_o, nacelle_v[i]), (t_o, tower_v[i])]:
             rel_err = abs(vec_val - orig_val) / orig_val
             max_rel_err = max(max_rel_err, rel_err)
 

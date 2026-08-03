@@ -7,7 +7,7 @@ set -u
 cd "$(dirname "$0")"
 source /home/elie/Desktop/masters/EVERGI/rewind_env/bin/activate
 
-COUNTRIES=(ES FR SE IT NL PT PL IE AT GR FI RO HR UA BG CZ RS LT EE HU CY LU BA LV ME CH FO MK BY XK SK IS SI)
+COUNTRIES=(DE DK GB BE NO ES FR SE IT NL PT PL IE AT GR FI RO HR UA BG CZ RS LT EE HU CY LU BA LV ME CH FO MK BY XK SK IS SI)
 
 mkdir -p logs/algebraic_batch
 FAILED=()

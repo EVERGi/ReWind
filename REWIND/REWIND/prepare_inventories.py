@@ -471,8 +471,13 @@ def calculate_closest_distance(lon, lat, print_stats=False):
     Returns:
         float: Closest distance in meters.
     """
-    # Load and prepare bus data
-    bus_data = pd.read_csv(_DATA_DIR / "buses.csv")
+    # Load and prepare bus data. Uses the OSM-derived substation file (all 38 fleet
+    # countries, one consistent method) rather than buses.csv (PyPSA-Eur's transmission-bus
+    # extraction, zero coverage for 5 fleet countries) so this stays consistent with
+    # precompute_geo_columns.py's vectorized_dist_to_grid, which the algebraic model
+    # (fleet_evaluation_lca_algebraic.py) reads its per-turbine dist_to_grid from -- see
+    # PLAN_lca_algebraic.md "Completed 31 Jul 2026".
+    bus_data = pd.read_csv(_DATA_DIR / "osm_hv_substations_all_countries.csv")
     #bus_data = pd.read_csv(_DATA_DIR / "transformers.csv")
     bus_data['geometry'] = bus_data['geometry'].apply(wkt.loads)
     bus_gdf = gpd.GeoDataFrame(bus_data, geometry='geometry', crs="EPSG:4326")

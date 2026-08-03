@@ -517,6 +517,29 @@ columns.
 
 ---
 
+## 12. DONE 31 Jul 2026: buses.csv had zero coverage for 5 countries (BY, CY, FO, IS, XK)
+
+`buses.csv` is PyPSA-Eur's transmission-bus extraction, and PyPSA-Eur documents excluding
+non-synchronous/isolated grids, so Belarus, Cyprus, the Faroe Islands, Iceland, and Kosovo had
+no points at all. Cable length for turbines in these countries was really "distance to the
+nearest bus in a different country" (86-1047 km).
+
+Tried Gridfinder's `grid.gpkg` first, rejected it (84% systematic gap vs. `buses.csv` since it
+mixes in all-voltage lines, not just transmission). Replaced with a direct Overpass query for
+OSM `power=substation` points at 220 kV and above (falling back to a country's own top tier for
+grids that never reach 220 kV), validated to within a few percent of `buses.csv` for most of the
+33 already-covered countries. Rolled this out to all 38 fleet countries for consistency, not
+just the 5 missing ones.
+
+Along the way found that the exact baseline (`fleet_evaluation_v03_elie.py`) never actually used
+any of this: `calculate_closest_distance()` in `prepare_inventories.py` reads `buses.csv`
+directly and doesn't go through `geo_precomputed` at all, so the first baseline regeneration
+attempt changed nothing. Fixed by pointing that function at the new file too. Full writeup,
+numbers, and the false start with Gridfinder are in `PLAN_lca_algebraic.md`, "Completed 31 Jul
+2026."
+
+---
+
 ## Quick reference: files this work touches
 
 ```

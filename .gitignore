@@ -23,6 +23,7 @@ REWIND/REWIND/data/datasets/
 # Large geographic/climate data files
 *.nc
 *.7z
+*.gpkg
 
 # Incomplete downloads
 *.part
