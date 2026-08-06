@@ -145,7 +145,7 @@ consequence as item 2's bug.
 
 ---
 
-## 3. DONE: Monopile (16 Jul) and Semi-submersible (17 Jul) offshore models, validated for real
+## 3. DONE: Monopile (16 Jul), Semi-submersible (17 Jul), and Spar buoy (31 Jul) offshore models, all validated for real
 
 Both are built and confirmed against real baseline runs (not just smoke tests); see
 `PLAN_lca_algebraic.md`'s "Completed" sections for full detail:
@@ -155,27 +155,20 @@ Both are built and confirmed against real baseline runs (not just smoke tests); 
 - **Semi-submersible**: validated on BE (131 of 401 offshore turbines, sea_depth 9-36m),
   **0.31% abs mean error, first real test, no bugs found** (the numerically-derived formulas
   were correct on the first attempt).
-- **Spar buoy**: still only numerically verified against `scaling.py`, never run against a real
-  turbine. Checked EU-wide: **only Norway has Spar-buoy-range turbines (sea_depth >60m), and
-  only 2 of them** (up to 207m, Norway's real floating wind projects). Every other country
-  tops out at ≤56m. So this one specifically needs a Norway run, and even there it's a
-  2-turbine edge case, worth doing, but should not be expected to produce a large validation
-  sample.
+- **Spar buoy: DONE 31 Jul 2026.** Only Norway has Spar-buoy-range turbines (sea_depth >60m),
+  and only 2 of them (up to 207m, Norway's real floating wind projects); every other country
+  tops out at ≤56m. Validated as part of the full-fleet rerun that followed the `buses.csv`
+  fix (`PLAN_lca_algebraic.md`, "Completed 31 Jul 2026"): both Norway Spar buoy turbines match
+  baseline to **0.01% abs mean / 0.06% abs max** error. Small sample by nature (2 turbines),
+  but confirms the numerically-derived formulas hold on a real turbine, not just against
+  `scaling.py`.
 - **Known bug in the baseline itself, reproduced as-is:** `scaling.spar_buoy_floating_foundation()`
   returns mass in tonnes but `built_inventory.py` uses it directly as a kg amount (~1000x too
   little). Not our approximation; matched for comparability. Flag as a separate bug report.
 
-**Norway/Spar buoy validation, when it's done:** set `COUNTRY = 'NO'`, run
-`precompute_geo_columns.py` for Norway, confirm the bucket distribution includes those 2 Spar
-buoy turbines, run the real baseline (`fleet_evaluation_v03_elie.py`) and the algebraic model,
-and report the validation error the same way DK/BE were validated (see `PLAN_lca_algebraic.md`,
-"Completed 16-17 Jul 2026"). The known tonnes-vs-kg bug in
-`scaling.spar_buoy_floating_foundation()` should be reproduced as-is, not silently fixed, since
-that would break comparability with the baseline.
-
 ---
 
-## 4. DONE (mechanism + confirmation batch), IN PROGRESS (full coverage): generalized to any country
+## 4. DONE: generalized to any country, all 38 covered
 
 **Update 21 Jul 2026 (confirmation):** confirmed on a 3-country batch (NO/DE/GB, ~148 turbines)
 chosen to cover all 4 test cases (onshore + Monopile + Semi-submersible + Spar buoy) at once;
@@ -305,28 +298,24 @@ categories in `figures/by_metric/`. Re-run any time the underlying
 
 ---
 
-## 7. TODO: generate summary statistics for the paper
+## 7. DONE 3 Aug 2026: generate summary statistics for the paper
 
-**Why:** the fleet-wide algebraic results (38 countries, 25 EF v3.1 methods, per-stage
-breakdowns) are sitting in `REWIND/REWIND/data/results/fleet_impacts_<ISO>_lca_algebraic*.csv`
-but haven't been aggregated into paper-ready summary tables/figures yet.
+Built `generate_paper_summary_stats.py`, covering all 5 candidates from the original scope
+(GWP100 distribution, per-country ranking weighted and unweighted, stage contribution, GWP100
+vs rated power/age/park size, and one addition: whether GWP100 alone tracks the other 24 EF
+v3.1 methods, turbine-level and country-level). CSVs in
+`REWIND/REWIND/data/summary_stats/`, full write-up with numbers and interpretation in
+`SUMMARY_STATISTICS.md` at the repo root.
 
-**Candidate stats to compute (this list is a starting menu, not a fixed spec; confirm scope
-before generating everything):**
-- EU-wide GWP100 distribution (mean/median/std/min/max), and the same broken down by
-  onshore vs offshore and by foundation-type bucket.
-- Per-country ranking (best/worst mean GWP100). DE's huge fleet (36% of the EU total) will
-  dominate any unweighted EU-wide average, so decide whether to report a simple mean, a
-  fleet-size-weighted mean, or both.
-- Stage contribution breakdown (Input/Assembly/Transport/Maintenance/Disposal as % of Total)
-  EU-wide and by country, using the `_by_stage` CSVs.
-- Correlation checks: GWP100 vs rated power, vs turbine age/commissioning date, vs park size,
-  useful for the discussion section.
-- Cross-check EU-wide summary stats against the "Unresolved" comparison in item 5 above (the
-  paper's original DK numbers) now that the full fleet is available, if useful context.
+Headline result worth carrying into the paper's discussion section: GWP100 does **not**
+reliably track the other 24 methods. Only 13 of 24 correlate strongly (turbine-level) and only
+12 of 24 at the country-ranking level; metals/minerals depletion, land use, and non-carcinogenic
+human toxicity diverge the most, since they aren't driven by the same combustion/energy
+processes that dominate GWP100. See `SUMMARY_STATISTICS.md` section 5 for the full breakdown.
 
-**Before building:** same as item 6, confirm which stats matter most for the paper structure
-before generating everything speculatively.
+The cross-check against item 5's paper-original DK numbers is still not done (needs Dominik's
+raw per-turbine data, see item 5 itself); everything else from the original candidate list is
+covered.
 
 ---
 
@@ -376,7 +365,7 @@ GitHub?), not something to decide unilaterally.
 
 ---
 
-## 9. TODO: fix the significance-filter design in the validation summary (found/agreed 28 Jul 2026, current design is a bad idea)
+## 9. DONE 28 Jul 2026: fix the significance-filter design in the validation summary
 
 **Why:** `validate_against_baseline()` in `fleet_evaluation_lca_algebraic.py` (see
 `_err_summary` and the `significant` column) excludes any (turbine, stage, method) row where
@@ -480,40 +469,42 @@ still correct in the live repo.
 
 ---
 
-## 11. TODO: the silent-fail-to-zero fallback in the baseline scripts (found 28 Jul 2026)
+## 11. DONE 3 Aug 2026: the silent-fail-to-zero fallback in the baseline scripts (found 28 Jul 2026)
 
-**Why:** `fleet_evaluation_v02.py`, `fleet_evaluation_v03_elie.py` (the actual "exact" ground
-truth every algebraic-model validation is measured against), and `fleet_evaluation_redo_lci.py`
-all wrap their per-turbine loop in a broad `except Exception as e:` that prints the error and
-then, for `v02.py`/`v03_elie.py`, writes a fabricated `0` for every lifecycle stage of that
+**Why:** `fleet_evaluation_v03_elie.py` (the actual "exact" ground truth every algebraic-model
+validation is measured against) wrapped its per-turbine loop in a broad `except Exception as e:`
+that printed the error and then wrote a fabricated `0` for every lifecycle stage of that
 turbine into the output CSV, indistinguishable from a genuine (if implausible) zero-impact
-result. `redo_lci.py`'s version just drops the turbine from its output list, which is milder
-(no fake data) but still leaves no trace in the final CSV beyond a stdout line. This is the
+result. A second, milder version of the same thing lived in the `results is None` branch just
+above it. Printing the error didn't actually help: the print goes to whatever console happened
+to be watching at the time, but the CSV, the artifact every downstream comparison and any
+future citation of these numbers actually reads, kept the fabricated `0` forever. This is the
 same mechanism already documented in `PLAN_lca_algebraic.md`'s item-5 discussion as having
-caused 27 turbines to silently fail in Dominik's original full-EU run; it's still live in the
-current scripts, unchanged.
+caused 27 turbines to silently fail in Dominik's original full-EU run.
 
-**Checked 28 Jul 2026, confirmed clean today:** queried every one of the 175 turbines actually
-used to validate the algebraic model (DK/BE/DE/GB/NO, onshore + every offshore bucket) for
-`Total == 0` in their `*_baseline_all_methods.csv`; zero hits in all 5 countries. So today's
-validated numbers are not affected. But the mechanism itself is a live risk: any *future*
-baseline rerun (or a first-time baseline run for any of the 33 non-validated countries) could
-silently inject fake zeros with nothing in the output CSV to flag it, and a downstream
-comparison (this script's `assert_same_turbines()`/`validate_against_baseline()`) would happily
-treat that zero as ground truth rather than catching the failure.
+**Checked 28 Jul 2026 and again 3 Aug 2026 against the freshly regenerated baselines:** zero
+`Total == 0` hits across all 218 turbines in the 5 validated countries (DE/DK/GB/BE/NO, onshore
++ every offshore bucket), both times. So no historical number has actually been affected by
+this, but the mechanism itself was a live risk for any future run.
 
-**Recommended fix:** stop writing a fabricated `0` on exception. Instead, write the failing
-turbine's index/error message to a separate `<output>_failed_turbines.csv` (or an explicit
-`status` column on the main output, e.g. `'ok'`/`'failed: <error>'`) and leave that turbine's
-stage columns as `NaN`, not `0`, so a failure is visibly distinguishable from a real result at
-every downstream step, instead of silently blending in as ground truth.
+**Fix applied:** both places in `fleet_evaluation_v03_elie.py`'s `process_fleet()` that used to
+write a fabricated `0` now instead append `{turbine_idx, label, error}` to a `failed_turbines`
+list and leave that turbine's stage columns as `NaN` in the main output. The list is written to
+a separate `<output>_failed_turbines.csv` (e.g. `fleet_impacts_DE_failed_turbines.csv`) at every
+checkpoint and again at the end, so a crash mid-run doesn't lose the failure record either.
+Verified in isolation: a simulated failing turbine now shows up as `NaN` (not `0`) in the main
+CSV and gets a matching row in `_failed_turbines.csv` with its index and error message.
 
-**Scope:** the per-turbine `try/except` blocks in `fleet_evaluation_v02.py`,
-`fleet_evaluation_v03_elie.py`, and `fleet_evaluation_redo_lci.py`. Since these are the
-"baseline"/"exact" scripts (not the algebraic model), any change here needs the same care as
-item 2/2b's baseline-code changes: confirm with the advisor before altering the actual
-baseline-generation logic, since a rerun would be needed to produce the new failure-tracking
-columns.
+**Scope, and what's still open:** only `fleet_evaluation_v03_elie.py` was changed, since it's
+the actual baseline every validation reads. `fleet_evaluation_redo_lci.py` has the same class of
+issue (its `except` block on the inventory-building loop just drops the turbine with a print,
+no trace in the output file) but is explicitly not the reference baseline anymore (see
+`fleet_evaluation_lca_algebraic.py`'s own module docstring: "Option B... no longer used here"),
+so it was left alone to keep this change scoped to the file that actually matters.
+`fleet_evaluation_v02.py` only exists in `Shared_Rewind/` (Dominik's original, gitignored,
+not part of the active pipeline), out of scope entirely. This change only affects turbines that
+fail on some *future* run; nothing about the already-computed results changed, since none of
+today's re-run turbines actually failed.
 
 ---
 

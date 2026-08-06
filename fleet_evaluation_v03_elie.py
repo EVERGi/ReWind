@@ -86,6 +86,13 @@ def process_fleet(country_data, sea_depth_map, output_path, all_methods_path, la
     """
     t_inv, t_lca, t_lca_all_methods = 0.0, 0.0, 0.0
     all_methods_rows = []
+    # Turbines that raise or return None never get a fabricated 0 written into the main
+    # output anymore (that was indistinguishable from a real zero-impact turbine downstream,
+    # see NEXT_STEPS_lca_algebraic.md item 11). Instead their stage columns stay NaN in
+    # country_data, and they're logged here, one row per failure, written to a separate
+    # <output>_failed_turbines.csv so a failure is visible without reading console output.
+    failed_turbines = []
+    failed_turbines_path = output_path.with_name(output_path.stem + "_failed_turbines.csv")
 
     for n_done, (idx, row) in enumerate(country_data.iterrows(), start=1):
         try:
@@ -111,8 +118,10 @@ def process_fleet(country_data, sea_depth_map, output_path, all_methods_path, la
             t_lca += time.perf_counter() - t1
 
             if results is None:
-                print(f"No results for turbine at index {idx} in {label}. Setting all stages to 0.")
-                results = {stage: 0 for stage in lifecycle_stages_onshore}
+                print(f"No results for turbine at index {idx} in {label}. Logging as failed.")
+                failed_turbines.append({'turbine_idx': idx, 'label': label,
+                                         'error': 'lca_wimby_fleet_evaluation returned None'})
+                continue
 
             stages = lifecycle_stages_offshore if row['Offshore'] else lifecycle_stages_onshore
             for stage in stages:
@@ -144,8 +153,7 @@ def process_fleet(country_data, sea_depth_map, output_path, all_methods_path, la
 
         except Exception as e:
             print(f"Error processing turbine at index {idx} in {label}: {e}")
-            for stage in lifecycle_stages_onshore + lifecycle_stages_offshore:
-                country_data.loc[idx, stage] = 0
+            failed_turbines.append({'turbine_idx': idx, 'label': label, 'error': str(e)})
 
         # Checkpoint: save progress every 5 turbines (and on the last one), so a crash or
         # interrupt partway through doesn't lose everything, and progress is visible on disk.
@@ -153,7 +161,16 @@ def process_fleet(country_data, sea_depth_map, output_path, all_methods_path, la
             country_data.to_csv(output_path, index=False)
             if all_methods_rows:
                 pd.concat(all_methods_rows, ignore_index=True).to_csv(all_methods_path, index=False)
-            print(f"  [checkpoint] {n_done}/{len(country_data)} turbines processed, progress saved")
+            if failed_turbines:
+                pd.DataFrame(failed_turbines).to_csv(failed_turbines_path, index=False)
+            print(f"  [checkpoint] {n_done}/{len(country_data)} turbines processed, progress saved"
+                  + (f", {len(failed_turbines)} failed so far (see {failed_turbines_path.name})"
+                     if failed_turbines else ""))
+
+    if failed_turbines:
+        pd.DataFrame(failed_turbines).to_csv(failed_turbines_path, index=False)
+        print(f"  {len(failed_turbines)} turbine(s) failed in {label}, logged to {failed_turbines_path} "
+              f"(their stage columns are left NaN in {output_path.name}, not fabricated as 0)")
 
     all_methods_df = pd.concat(all_methods_rows, ignore_index=True) if all_methods_rows else pd.DataFrame()
     return country_data, all_methods_df, t_inv, t_lca, t_lca_all_methods
