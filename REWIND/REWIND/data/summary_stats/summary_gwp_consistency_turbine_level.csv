@@ -1,25 +1,25 @@
-method,n,pearson_r,spearman_r
-material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],77552,0.622530857265598,0.5410404082345651
-"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.6401456727572524,0.6238563508439043
-land use - soil quality index[dimensionless],77552,0.6402072498345295,0.6775854312893026
-human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],77552,0.8099515267690631,0.7184904333275361
-"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.8153816738698962,0.7220455376245014
-ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],77552,0.8708164782021237,0.8381092224088624
-climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],77552,0.9395496477740657,0.8553094541172098
-climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],77552,0.8457678631453213,0.8583329782734788
-"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.9676561602576543,0.8906888636789607
-"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",77552,0.9633892419791121,0.8913526090217904
-eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],77552,0.9637418557423196,0.8987385958829172
-ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],77552,0.9677934773787435,0.9012510739144508
-acidification - accumulated exceedance (AE)[mol H+-Eq],77552,0.9715346256111199,0.9193142874456034
-"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.967142358052925,0.9384449150739256
-human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],77552,0.9785730385404959,0.9461037114782369
-ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],77552,0.9905088448720487,0.9679258634905932
-particulate matter formation - impact on human health[disease incidence],77552,0.9914367219460816,0.9708980484267239
-water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],77552,0.9907292293927498,0.9827537994023868
-eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],77552,0.9973861655871837,0.9904034799857339
-photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],77552,0.998144274444352,0.9930681451219561
-"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",77552,0.9970914443144943,0.994005997579919
-"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",77552,0.9935583955979891,0.9944105952615819
-eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],77552,0.9978473326507106,0.9948312842803817
-climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],77552,0.9999994813905431,0.9999986451432291
+method,n,pearson_r,pearson_p,spearman_r,spearman_p
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],77552,0.622530857265598,0.0,0.5410404082345651,0.0
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.6401456727572524,0.0,0.6238563508439043,0.0
+land use - soil quality index[dimensionless],77552,0.6402072498345295,0.0,0.6775854312893026,0.0
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],77552,0.8099515267690631,0.0,0.7184904333275361,0.0
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.8153816738698962,0.0,0.7220455376245014,0.0
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],77552,0.8708164782021237,0.0,0.8381092224088624,0.0
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],77552,0.9395496477740657,0.0,0.8553094541172098,0.0
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],77552,0.8457678631453213,0.0,0.8583329782734788,0.0
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.9676561602576543,0.0,0.8906888636789607,0.0
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",77552,0.9633892419791121,0.0,0.8913526090217904,0.0
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],77552,0.9637418557423196,0.0,0.8987385958829172,0.0
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],77552,0.9677934773787435,0.0,0.9012510739144508,0.0
+acidification - accumulated exceedance (AE)[mol H+-Eq],77552,0.9715346256111199,0.0,0.9193142874456034,0.0
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",77552,0.967142358052925,0.0,0.9384449150739256,0.0
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],77552,0.9785730385404959,0.0,0.9461037114782369,0.0
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],77552,0.9905088448720487,0.0,0.9679258634905932,0.0
+particulate matter formation - impact on human health[disease incidence],77552,0.9914367219460816,0.0,0.9708980484267239,0.0
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],77552,0.9907292293927498,0.0,0.9827537994023868,0.0
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],77552,0.9973861655871837,0.0,0.9904034799857339,0.0
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],77552,0.998144274444352,0.0,0.9930681451219561,0.0
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",77552,0.9970914443144943,0.0,0.994005997579919,0.0
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",77552,0.9935583955979891,0.0,0.9944105952615819,0.0
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],77552,0.9978473326507106,0.0,0.9948312842803817,0.0
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],77552,0.9999994813905431,0.0,0.9999986451432291,0.0

@@ -41,6 +41,9 @@ from sklearn.inspection import permutation_importance
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
+from importance_stats import (compute_clusters, grouped_permutation_importance,
+                               permutation_significance, wrap_cluster_label)
+
 REPO = Path(__file__).resolve().parent
 DATA = REPO / "REWIND" / "REWIND" / "data"
 RESULTS_DIR = DATA / "results"
@@ -185,29 +188,61 @@ def load_feature_tables() -> dict[str, pd.DataFrame]:
     return tables
 
 
-def train_and_rank(df: pd.DataFrame, features: list[str], target_col: str):
+def train_and_rank(df: pd.DataFrame, features: list[str], target_col: str, clusters: dict):
     X = df[features].astype(float)
     y = df[target_col].astype(float)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    model = RandomForestRegressor(n_estimators=300, max_depth=12, random_state=42, n_jobs=-1)
-    model.fit(X_train, y_train)
+    # Standardize the target before fitting. Several EF3.0 impact columns have very small
+    # absolute magnitudes (e.g. human toxicity, CTUh ~1e-10-1e-11; ozone depletion, kg CFC-11-Eq
+    # ~1e-10) -- sklearn's tree-splitter silently fails to find ANY split at that magnitude
+    # (every tree collapses to a single-leaf constant predictor, R^2 comes back ~0 from
+    # floating-point noise alone, not a real null result). Verified directly: rescaling one such
+    # column by a constant factor (which changes nothing statistically) flipped R^2 from -0.003
+    # to 0.97. R^2 is exactly invariant under this affine transform (mean/std from TRAIN only,
+    # to avoid test-set leakage), so this reports the same number a numerically well-behaved fit
+    # would have given, not a different metric -- and is applied to every target uniformly, not
+    # just the ones currently broken, since it's harmless at any scale.
+    y_mean, y_std = y_train.mean(), y_train.std()
+    y_train_s = (y_train - y_mean) / y_std
+    y_test_s = (y_test - y_mean) / y_std
 
-    r2 = r2_score(y_test, model.predict(X_test))
+    model = RandomForestRegressor(n_estimators=300, max_depth=12, random_state=42, n_jobs=-1)
+    model.fit(X_train, y_train_s)
+
+    r2 = r2_score(y_test_s, model.predict(X_test))
 
     impurity = pd.Series(model.feature_importances_, index=features).sort_values(ascending=False)
 
-    perm = permutation_importance(model, X_test, y_test, n_repeats=15, random_state=42, n_jobs=-1)
+    perm = permutation_importance(model, X_test, y_test_s, n_repeats=15, random_state=42, n_jobs=-1)
     permutation = pd.Series(perm.importances_mean, index=features).sort_values(ascending=False)
 
-    return impurity, permutation, r2
+    # Significance: is each feature's importance consistently above zero across the 15 shuffle
+    # repeats, or indistinguishable from noise? Uses sklearn's own raw per-repeat values
+    # (perm.importances), already computed, previously discarded. See importance_stats.py.
+    significance = permutation_significance(perm, features)
+
+    # Grouped importance: mitigates permutation importance's known bias under correlated
+    # features (shuffling one of several correlated columns barely hurts the model, since it
+    # reads the same signal off the correlated partner) by shuffling each cluster of
+    # near-collinear features together. See importance_stats.py and clusters computed once per
+    # category in main().
+    grouped = grouped_permutation_importance(model, X_test, y_test_s, clusters)
+
+    return impurity, permutation, r2, significance, grouped
 
 
 def plot_importances(impurity: pd.Series, permutation: pd.Series, r2: float, features: list[str],
-                      impact_label: str, category_label: str, out_path: Path):
+                      impact_label: str, category_label: str, out_path: Path,
+                      significance: pd.DataFrame = None):
     order = impurity.reindex(features).sort_values().index  # ascending, so barh reads largest-on-top
     labels = [FEATURE_LABELS[f] for f in order]
+    # Non-significant features (one-sided t-test on the 15 shuffle repeats, p >= 0.05: can't
+    # distinguish this feature's importance from zero) get a "n.s." suffix on their label.
+    if significance is not None:
+        labels = [lbl + ("" if significance.loc[f, "p_value"] < 0.05 else "  (n.s.)")
+                  for f, lbl in zip(order, labels)]
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 5.2), sharey=True)
     fig.suptitle(f"What drives per-turbine {impact_label}: {category_label}",
@@ -217,8 +252,11 @@ def plot_importances(impurity: pd.Series, permutation: pd.Series, r2: float, fea
     axes[0].set_title("Impurity-based (random forest)", fontsize=10.5, color=TEXT_SECONDARY)
     axes[0].set_xlabel("Importance", fontsize=9.5)
 
-    axes[1].barh(labels, permutation.loc[order].values, color=ORANGE, height=0.62)
-    axes[1].set_title("Permutation (held-out test set)", fontsize=10.5, color=TEXT_SECONDARY)
+    xerr = significance.loc[order, "std"].values if significance is not None else None
+    axes[1].barh(labels, permutation.loc[order].values, xerr=xerr, color=ORANGE, height=0.62,
+                 ecolor=TEXT_SECONDARY, capsize=2.5, error_kw={"linewidth": 1})
+    axes[1].set_title("Permutation (held-out test set, error bars = std across 15 repeats)",
+                       fontsize=10.5, color=TEXT_SECONDARY)
     axes[1].set_xlabel("Mean R^2 drop when shuffled", fontsize=9.5)
 
     for ax in axes:
@@ -273,22 +311,23 @@ def plot_known_formula_scatter(onshore_df: pd.DataFrame, offshore_dfs: list[pd.D
     print(f"Saved {out_path}")
 
 
-def plot_final_heatmap(perm_shares: dict[str, pd.DataFrame], modeled_categories: list[str]):
-    """One figure, one subplot per modeled category: features (rows) x impacts (columns),
-    color = permutation importance as a share of that impact's total (columns sum to 1)."""
+def plot_heatmap(matrices: dict[str, pd.DataFrame], modeled_categories: list[str], title: str,
+                  cbar_label: str, out_path: Path, cmap: str = "YlOrRd", vmin: float = 0,
+                  vmax: float = 1, row_height: float = 3.1, ytick_fontsize: float = 8.5):
+    """One figure, one subplot per modeled category: rows (already display-labeled by the
+    caller) x the 25 impacts, color = value in `matrices[category]`."""
     n = len(modeled_categories)
-    fig, axes = plt.subplots(n, 1, figsize=(13, 3.1 * n + 1.2))
+    fig, axes = plt.subplots(n, 1, figsize=(13, row_height * n + 1.2))
     if n == 1:
         axes = [axes]
 
     impact_labels = [label for _, label, _ in IMPACTS]
     im = None
     for ax, category in zip(axes, modeled_categories):
-        mat = perm_shares[category]
-        mat = mat.reindex(columns=impact_labels)
-        im = ax.imshow(mat.values, aspect="auto", cmap="YlOrRd", vmin=0, vmax=1)
+        mat = matrices[category].reindex(columns=impact_labels)
+        im = ax.imshow(mat.values, aspect="auto", cmap=cmap, vmin=vmin, vmax=vmax)
         ax.set_yticks(range(len(mat.index)))
-        ax.set_yticklabels([FEATURE_LABELS[f] for f in mat.index], fontsize=8.5)
+        ax.set_yticklabels(mat.index, fontsize=ytick_fontsize)
         ax.set_xticks(range(len(impact_labels)))
         if ax is axes[-1]:
             ax.set_xticklabels(impact_labels, rotation=60, ha="right", fontsize=7.5)
@@ -298,12 +337,17 @@ def plot_final_heatmap(perm_shares: dict[str, pd.DataFrame], modeled_categories:
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    fig.suptitle("Feature importance share across all impact categories, by turbine siting",
-                 fontsize=13, fontweight="bold", x=0.02, ha="left")
-    cbar = fig.colorbar(im, ax=axes, shrink=0.6, pad=0.015)
-    cbar.set_label("Share of permutation importance\n(within each impact column)", fontsize=8.5)
-    fig.subplots_adjust(left=0.18, right=0.86, top=0.93, bottom=0.22, hspace=0.55)
-    out_path = OUT / "fig_importance_heatmap.png"
+    fig.suptitle(title, fontsize=13, fontweight="bold", x=0.02, ha="left")
+    # Reserve the panels' layout FIRST (right=0.84), then place the colorbar in an explicit
+    # fixed-position axes to its right. fig.colorbar(im, ax=axes, ...) alone computes the
+    # colorbar's position from the axes' bounding boxes at call time; a subsequent
+    # subplots_adjust(right=...) then stretches the panels without moving the colorbar,
+    # so the two land on top of each other. An explicit cax sidesteps that ordering bug.
+    fig.subplots_adjust(left=0.28, right=0.84, top=0.93, bottom=0.22, hspace=0.55)
+    pos_top, pos_bot = axes[0].get_position(), axes[-1].get_position()
+    cbar_ax = fig.add_axes((0.87, pos_bot.y0, 0.02, pos_top.y1 - pos_bot.y0))
+    cbar = fig.colorbar(im, cax=cbar_ax)
+    cbar.set_label(cbar_label, fontsize=8.5)
     fig.savefig(out_path, dpi=170)
     plt.close(fig)
     print(f"Saved {out_path}")
@@ -312,6 +356,7 @@ def plot_final_heatmap(perm_shares: dict[str, pd.DataFrame], modeled_categories:
 
 def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict]],
                     r2_by_category: dict[str, list[float]], heatmap_path: Path,
+                    grouped_heatmap_path: Path, cluster_members: dict[str, list[list[str]]],
                     modeled_categories: list[str]):
     lines = []
     lines.append("# What actually drives per-turbine impacts, by category and siting")
@@ -323,9 +368,9 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
         "formulas for how rated power, rotor diameter, hub height, cable length, etc. map to "
         "material mass and each of the 25 EF3.0 impact categories are already known exactly "
         "(the model is symbolic, not a black box). The point here is to confirm, in the actual "
-        "fleet data, which of those known drivers matters most — for every impact category, "
-        "not just the headline climate metric — and to check whether the answer changes "
-        "with how a turbine is sited."
+        "fleet data, which of those known drivers matters most, for every impact category and "
+        "not just the headline climate metric, and to check whether the answer changes with how "
+        "a turbine is sited."
     )
     lines.append("")
     lines.append(
@@ -342,12 +387,12 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
     lines.append("")
     lines.append(
         "A random forest (300 trees, max depth 12) trained per (turbine category, impact "
-        "category) pair — up to 4 x 25 = 100 models — on an 80/20 train/test split. Two "
-        "rankings per model, computed two different ways so neither's blind spots go "
-        "unchecked: the model's own impurity-based `feature_importances_`, and permutation "
-        "importance (how much held-out R² drops when a single feature is shuffled, averaged "
-        "over 15 repeats). Permutation is the more trustworthy of the two, since impurity-based "
-        "importance is known to inflate high-cardinality continuous features."
+        "category) pair, up to 4 x 25 = 100 models, on an 80/20 train/test split. Two rankings "
+        "per model, computed two different ways so neither's blind spots go unchecked: the "
+        "model's own impurity-based `feature_importances_`, and permutation importance (how "
+        "much held-out R² drops when a single feature is shuffled, averaged over 15 repeats). "
+        "Permutation is the more trustworthy of the two, since impurity-based importance is "
+        "known to inflate high-cardinality continuous features."
     )
     lines.append("")
     onshore_n = len(FEATURES_ONSHORE)
@@ -355,8 +400,50 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
     lines.append(
         f"Onshore uses {onshore_n} features (no sea depth, always 0). Offshore categories use "
         f"{offshore_n} features (adds sea depth). Categories with fewer than {MIN_SAMPLES} "
-        "turbines are reported but not modeled — an 80/20 split on a handful of rows doesn't "
+        "turbines are reported but not modeled: an 80/20 split on a handful of rows doesn't "
         "produce a meaningful ranking."
+    )
+    lines.append("")
+
+    lines.append("## Multicollinearity: why individual rankings need a second opinion")
+    lines.append("")
+    lines.append(
+        "Permutation importance is known to misattribute credit when predictors are correlated: "
+        "shuffling one of two correlated features barely hurts the model, since it can still "
+        "read the same signal off the other one, so importance gets split or hidden rather than "
+        "measured (Strobl, Boulesteix, Kneib, Augustin & Zeileis, \"Conditional variable "
+        "importance for random forests\", *BMC Bioinformatics* 2008). This fleet has real "
+        "collinearity: rated power, rotor diameter, hub height, and turbine age correlate at "
+        "Spearman |r| up to 0.93 (bigger, newer turbines are simultaneously taller, wider-rotor, "
+        "and higher-rated: one underlying trend, four correlated measurements of it)."
+    )
+    lines.append("")
+    lines.append(
+        "Mitigation follows scikit-learn's own documented approach for this problem "
+        "(*Permutation Importance with Multicollinear or Correlated Features*): cluster "
+        "features by hierarchical clustering on Spearman-correlation distance (merge at "
+        f"|r| ≥ 0.7, a standard high-correlation cutoff), then shuffle every feature in a "
+        "cluster together. This credits the cluster as a whole instead of letting the credit "
+        "land arbitrarily on whichever member wins tie-breaking. Both the individual ranking "
+        "(heatmap and per-impact figures above) and this clustered ranking are reported; where "
+        "they agree, the individual ranking is trustworthy. Where a feature's individual rank is "
+        "high but it's clustered with others, read the *cluster*, not that one feature, as the "
+        "real finding."
+    )
+    lines.append("")
+    for category in modeled_categories:
+        lines.append(f"**{CATEGORY_TITLES[category]} clusters**: " +
+                     "; ".join(" + ".join(g) for g in cluster_members[category]) + ".")
+        lines.append("")
+    lines.append(f"![Clustered feature importance heatmap]({grouped_heatmap_path.relative_to(REPO)})")
+    lines.append("")
+    lines.append(
+        "Each per-impact figure above also marks individually non-significant features "
+        "\"(n.s.)\": a one-sided one-sample t-test on the 15 permutation-repeat values per "
+        "feature (H1: mean importance > 0), using scikit-learn's own raw per-repeat output "
+        "(normally discarded once `.importances_mean` is read). p < 0.05 is treated as "
+        "significant; how many of the candidate features clear that bar for each impact is in "
+        "the per-impact table below."
     )
     lines.append("")
 
@@ -380,7 +467,7 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
         lines.append("")
         if category not in modeled_categories:
             lines.append(
-                f"Only {n} turbines in the fleet in this category — below the "
+                f"Only {n} turbines in the fleet in this category, below the "
                 f"{MIN_SAMPLES}-sample threshold for a meaningful train/test split. Excluded "
                 "from modeling; not enough data to rank feature importance."
             )
@@ -393,10 +480,11 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
             f"{min(r2s):.3f}–{max(r2s):.3f} (mean {np.mean(r2s):.3f})."
         )
         lines.append("")
-        lines.append("| Impact category | Held-out R² | Top feature (permutation) |")
-        lines.append("|---|---|---|")
+        lines.append("| Impact category | Held-out R² | Top feature (permutation) | Significant (p<0.05) |")
+        lines.append("|---|---|---|---|")
         for row in summary[category]:
-            lines.append(f"| {row['impact_label']} | {row['r2']:.3f} | {row['top_feature']} |")
+            lines.append(f"| {row['impact_label']} | {row['r2']:.3f} | {row['top_feature']} | "
+                          f"{row['n_significant']}/{row['n_total']} |")
         lines.append("")
 
         for row in summary[category]:
@@ -478,11 +566,24 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
 def main():
     tables = load_feature_tables()
 
+    # Full per-turbine data: all characteristics + all 25 impacts, one row per turbine. Saved
+    # for every category with data, including ones below MIN_SAMPLES (offshore spar) that
+    # aren't modeled but were still used/loaded.
+    for category in CATEGORY_ORDER:
+        df = tables[category]
+        if len(df) == 0:
+            continue
+        cat_dir = OUT / category
+        cat_dir.mkdir(parents=True, exist_ok=True)
+        df.to_csv(cat_dir / "per_turbine_data.csv")
+
     modeled_categories = [c for c in CATEGORY_ORDER if len(tables[c]) >= MIN_SAMPLES]
 
     summary: dict[str, list[dict]] = {c: [] for c in CATEGORY_ORDER}
     r2_by_category: dict[str, list[float]] = {c: [] for c in modeled_categories}
     perm_shares: dict[str, pd.DataFrame] = {}
+    grouped_shares: dict[str, pd.DataFrame] = {}
+    cluster_members: dict[str, list[list[str]]] = {}
 
     for category in modeled_categories:
         df = tables[category]
@@ -491,32 +592,69 @@ def main():
         cat_dir.mkdir(parents=True, exist_ok=True)
         print(f"\n=== {CATEGORY_TITLES[category]} (n={len(df)}) ===")
 
+        # Cluster near-collinear features (Spearman |r| >= 0.7) once per category -- see
+        # importance_stats.py. Correlated features bias BOTH impurity and permutation
+        # importance; shuffling a whole cluster together (grouped_permutation_importance) is
+        # the documented mitigation, reported alongside (not instead of) the individual ranking.
+        clusters = compute_clusters(df, features)  # {raw joined label: [raw members]}
+        cluster_label_map = {raw: wrap_cluster_label([FEATURE_LABELS[c] for c in members])
+                              for raw, members in clusters.items()}
+        display_index = list(cluster_label_map.values())
+        cluster_members[category] = [[FEATURE_LABELS[c] for c in members] for members in clusters.values()]
+        pd.DataFrame({"cluster_members": [", ".join(g) for g in cluster_members[category]]}
+                     ).to_csv(cat_dir / "feature_clusters.csv", index=False)
+
         perm_matrix = pd.DataFrame(index=features, dtype=float)
+        grouped_matrix = pd.DataFrame(index=display_index, dtype=float)
+        significance_matrix = pd.DataFrame(index=features, dtype=float)
         for full_col, short_label, slug in IMPACTS:
-            impurity, permutation, r2 = train_and_rank(df, features, full_col)
+            impurity, permutation, r2, significance, grouped = train_and_rank(
+                df, features, full_col, clusters)
             out_path = cat_dir / f"fig_feature_importance_{slug}.png"
             plot_importances(impurity, permutation, r2, features, short_label,
-                              CATEGORY_TITLES[category], out_path)
+                              CATEGORY_TITLES[category], out_path, significance)
 
             perm_matrix[short_label] = permutation.reindex(features)
+            grouped_matrix[short_label] = grouped.rename(index=cluster_label_map).reindex(display_index)
+            significance_matrix[short_label] = significance["p_value"].reindex(features)
             r2_by_category[category].append(r2)
             top_feature = FEATURE_LABELS[permutation.idxmax()]
+            n_sig = int((significance["p_value"] < 0.05).sum())
             summary[category].append({
                 "impact_label": short_label, "r2": r2, "top_feature": top_feature,
-                "fig_path": out_path,
+                "fig_path": out_path, "n_significant": n_sig, "n_total": len(features),
             })
-            print(f"  {short_label}: R^2={r2:.3f}, top={top_feature}")
+            print(f"  {short_label}: R^2={r2:.3f}, top={top_feature}, "
+                  f"significant={n_sig}/{len(features)}")
 
         # normalize each column (impact) so permutation importances sum to 1 -> comparable share
         perm_shares[category] = perm_matrix.div(perm_matrix.sum(axis=0), axis=1)
+        grouped_shares[category] = grouped_matrix.div(grouped_matrix.sum(axis=0), axis=1)
+        # Cache the raw matrices so a plot-only fix (e.g. colorbar layout) never needs a full
+        # RF+permutation retrain again -- that's the expensive part, not the plotting.
+        perm_matrix.to_csv(cat_dir / "permutation_importance_matrix.csv")
+        grouped_matrix.to_csv(cat_dir / "grouped_permutation_importance_matrix.csv")
+        significance_matrix.to_csv(cat_dir / "permutation_pvalue_matrix.csv")
 
-    heatmap_path = plot_final_heatmap(perm_shares, modeled_categories)
+    perm_shares_display = {c: mat.rename(index=FEATURE_LABELS) for c, mat in perm_shares.items()}
+    heatmap_path = plot_heatmap(
+        perm_shares_display, modeled_categories,
+        "Feature importance share across all impact categories, by turbine siting",
+        "Share of permutation importance\n(within each impact column)",
+        OUT / "fig_importance_heatmap.png")
+
+    grouped_heatmap_path = plot_heatmap(
+        grouped_shares, modeled_categories,
+        "Clustered importance share (correlated features shuffled together as one unit)",
+        "Share of grouped permutation importance\n(within each impact column)",
+        OUT / "fig_grouped_importance_heatmap.png", row_height=3.6, ytick_fontsize=7.5)
 
     offshore_dfs = [tables[c] for c in ["offshore_monopile", "offshore_semi-submersible", "offshore_spar"]
                     if len(tables[c]) > 0]
     plot_known_formula_scatter(tables["onshore"], offshore_dfs)
 
-    write_markdown(tables, summary, r2_by_category, heatmap_path, modeled_categories)
+    write_markdown(tables, summary, r2_by_category, heatmap_path, grouped_heatmap_path,
+                    cluster_members, modeled_categories)
 
 
 if __name__ == "__main__":

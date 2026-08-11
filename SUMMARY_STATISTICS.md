@@ -68,19 +68,24 @@ depending on country; Maintenance is negligible everywhere (under 0.1%).
 
 ## 4. GWP100 vs turbine characteristics
 
-| Variable | n | Pearson r | Spearman r |
-|---|---|---|---|
-| Rated power (kW) | 77,552 | 0.064 | 0.326 |
-| Turbine age (years) | 77,552 | -0.335 | -0.462 |
-| Park size (turbines) | 77,552 | -0.065 | -0.170 |
+| Variable | n | Pearson r | Pearson p | Spearman r | Spearman p |
+|---|---|---|---|---|---|
+| Rated power (kW) | 77,552 | 0.064 | 3.9e-71 | 0.326 | <1e-300 |
+| Turbine age (years) | 77,552 | -0.335 | <1e-300 | -0.462 | <1e-300 |
+| Park size (turbines) | 77,552 | -0.065 | 4.7e-74 | -0.170 | <1e-300 |
 
-Rated power and park size both have weak relationships with GWP100 per kWh; a bigger turbine or
-a bigger park isn't reliably better or worse on its own. Turbine age is the strongest of the
-three, moderate and negative: newer turbines carry less GWP100 per kWh, consistent with
-material-efficiency and capacity-factor improvements over successive turbine generations.
-Spearman is notably higher than Pearson for rated power (0.326 vs 0.064) and age (-0.462 vs
--0.335), meaning the relationship is real but not linear, a rank-based trend more than a
-straight-line one.
+At n = 77,552, every p-value here is far below any conventional significance threshold,
+including rated power's r = 0.064, the weakest relationship in the table. That's the expected
+behavior of a p-value at this sample size, not a sign the weak correlations are secretly
+important: with this many turbines, even a small, practically negligible effect reaches
+"significant." The r values, not the p-values, are what actually distinguishes a strong
+relationship from a weak one here. Read this way: rated power and park size both have weak but
+real relationships with GWP100 per kWh, so a bigger turbine or a bigger park isn't reliably
+better or worse on its own. Turbine age is the strongest of the three, moderate and
+negative: newer turbines carry less GWP100 per kWh, consistent with material-efficiency and
+capacity-factor improvements over successive turbine generations. Spearman is notably higher
+than Pearson for rated power (0.326 vs 0.064) and age (-0.462 vs -0.335), meaning the
+relationship is real but not linear, a rank-based trend more than a straight-line one.
 
 ---
 
@@ -99,16 +104,26 @@ Two separate checks, full numbers in `summary_gwp_consistency_turbine_level.csv`
 strongly with GWP100 (Spearman r > 0.9); the other 11 don't. At the country level it's worse,
 12 of 24. The weakest methods, both ways, are largely the same set:
 
-| Method | Turbine-level Spearman r | Country-rank Spearman r |
-|---|---|---|
-| Metals/minerals depletion (ADP: elements) | 0.541 | 0.599 |
-| Land use (soil quality index) | 0.678 | 0.616 |
-| Human toxicity, non-carcinogenic, organics | 0.624 | 0.668 |
-| Human toxicity, non-carcinogenic, inorganics | 0.722 | 0.724 |
-| Human toxicity, non-carcinogenic (combined) | 0.718 | 0.724 |
-| Ionising radiation | 0.838 | 0.679 |
-| Climate change: biogenic | 0.855 | 0.701 |
-| Climate change: land use and land use change | 0.858 | 0.545 |
+| Method | Turbine-level Spearman r | Country-rank Spearman r | Country-rank p |
+|---|---|---|---|
+| Metals/minerals depletion (ADP: elements) | 0.541 | 0.599 | 7.1e-05 |
+| Land use (soil quality index) | 0.678 | 0.616 | 3.8e-05 |
+| Human toxicity, non-carcinogenic, organics | 0.624 | 0.668 | 4.7e-06 |
+| Human toxicity, non-carcinogenic, inorganics | 0.722 | 0.724 | 2.8e-07 |
+| Human toxicity, non-carcinogenic (combined) | 0.718 | 0.724 | 2.8e-07 |
+| Ionising radiation | 0.838 | 0.679 | 2.8e-06 |
+| Climate change: biogenic | 0.855 | 0.701 | 9.5e-07 |
+| Climate change: land use and land use change | 0.858 | 0.545 | 4.0e-04 |
+
+Country-rank p-values are worth reading here, unlike section 4's, since n = 38 countries rather
+than 77,552 turbines means they're not automatically driven to near-zero by sample size alone.
+Every one of these is still comfortably below 0.05, even the weakest, land-use-change at
+p = 4.0e-04, so "doesn't track GWP100" is a real, statistically supported finding at the country
+level, not noise from a small sample. Turbine-level p-values, by contrast, are effectively all
+`<1e-300` regardless of the method or the strength of r, for the same reason as section 4: at
+n = 77,552 they carry no information about effect size, so they aren't reported per-method here
+(full numbers are in `summary_gwp_consistency_turbine_level.csv` for anyone who wants them
+anyway).
 
 By contrast, the methods that track GWP100 almost perfectly (r > 0.99 both ways) are climate
 change: fossil (expected, since it's most of what makes up the headline GWP100 number itself),

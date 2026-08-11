@@ -44,3 +44,7 @@ s11367-021-01993-z.pdf
 
 # Scratch run logs
 logs/
+
+# Working methodology notes, not a polished deliverable like FEATURE_IMPORTANCE.md/
+# MATERIAL_IMPORTANCE.md/SUMMARY_STATISTICS.md
+IMPORTANCE_METHODOLOGY.md

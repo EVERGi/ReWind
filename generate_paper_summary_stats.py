@@ -170,10 +170,14 @@ def section_5_method_consistency(fleet: pd.DataFrame):
     for m in other_methods:
         sub = fleet[[GWP, m]].replace([np.inf, -np.inf], np.nan).dropna()
         sub = sub[(sub[GWP] != 0) & (sub[m] != 0)]
-        t_pear_r, _ = pearsonr(sub[GWP], sub[m])
-        t_spear_r, _ = spearmanr(sub[GWP], sub[m])
+        t_pear_r, t_pear_p = pearsonr(sub[GWP], sub[m])
+        t_spear_r, t_spear_p = spearmanr(sub[GWP], sub[m])
+        # NOTE: at n up to 77,552, turbine-level p-values are essentially always significant
+        # (p < 1e-10) regardless of effect size -- included for completeness, but the r values
+        # are what actually distinguishes a strong from a weak relationship here, not p.
         turbine_level.append({"method": m, "n": len(sub), "pearson_r": t_pear_r,
-                               "spearman_r": t_spear_r})
+                               "pearson_p": t_pear_p, "spearman_r": t_spear_r,
+                               "spearman_p": t_spear_p})
 
         m_rank = country_means[m].rank()
         c_spear_r, c_spear_p = spearmanr(gwp_rank, m_rank)
