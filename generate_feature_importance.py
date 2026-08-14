@@ -16,12 +16,27 @@ offshore spar) rather than mixing them with an "Offshore" flag: siting drives wh
 even apply (sea depth is meaningless onshore), so pooling categories together and treating
 Offshore as just another feature understates how differently the fleet behaves site-to-site.
 
-Features used (all already computed per turbine by precompute_geo_columns.py):
+Features used (all already computed per turbine by precompute_geo_columns.py, or derived here
+from mass_formulas.py -- the same closed-form component-mass formulas
+fleet_evaluation_lca_algebraic.py itself uses, not a re-fit):
     P_rated_kW, Hub_height_m, Diameter_m    turbine size
     dist_rotor_m, dist_nacelle_m, dist_tower_m   manufacturer -> site transport distances
     dist_to_grid_m                          cable length (turbine -> nearest substation)
     sea_depth_m                             offshore categories only (0 and constant onshore)
     turbine_age, park_size                  fleet/siting characteristics
+    Blade_mass_kg, Nacelle_mass_kg, Tower_mass_kg, Foundation_mass_kg   component masses, kg,
+        computed from P/d/h(/sea_depth) via mass_formulas.py -- deterministic (nonlinear)
+        functions of features already in the list above, so expect these to cluster tightly
+        with P_rated_kW/Hub_height_m/Diameter_m/sea_depth_m in the multicollinearity check
+        (see importance_stats.py); read the cluster, not any one member, as the finding.
+
+NOT used as predictors, despite being loaded and saved in the per-turbine CSVs:
+Lifetime_production_kWh and Capacity_factors. Every target here is impact / lifetime
+production (fleet_evaluation_lca_algebraic.py:981), so using that same denominator (or
+capacity factor, which determines it almost exactly given rated power) as a predictor is
+close to regressing X/Y on Y -- confirmed empirically, not just in principle: including them
+pushed every category's held-out R^2 to 0.98-1.00 (vs. a believable 0.73-0.97 without them),
+with one of the two topping almost every impact -- the signature of leakage.
 
 Targets: all impact categories in the fleet_impacts_*.csv results (24-25 depending on
 whether biogenic/fossil/land-use climate change sub-splits are counted separately from the
@@ -36,6 +51,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from adjustText import adjust_text
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import train_test_split
@@ -43,6 +59,8 @@ from sklearn.metrics import r2_score
 
 from importance_stats import (compute_clusters, grouped_permutation_importance,
                                permutation_significance, wrap_cluster_label)
+from mass_formulas import (M_tower, M_nacelle_onshore, M_nacelle_offshore, M_rotor_onshore,
+                            M_rotor_offshore, M_found_onshore, foundation_masses_offshore)
 
 REPO = Path(__file__).resolve().parent
 DATA = REPO / "REWIND" / "REWIND" / "data"
@@ -66,8 +84,17 @@ CATEGORY_TITLES = {
 MIN_SAMPLES = 30  # below this, an 80/20 split is meaningless; skip modeling and say so
 
 # --- features ----------------------------------------------------------------------------
+# Lifetime_production_kWh and Capacity_factors are loaded (TURBINE_FEATURE_COLS below) and kept
+# in the saved per-turbine CSVs, but deliberately EXCLUDED from the modeled feature list: every
+# impact target here is impact / Lifetime_production_kWh (fleet_evaluation_lca_algebraic.py:981),
+# so using that same denominator (or Capacity_factors, which determines it almost exactly given
+# rated power and a near-fixed design life) as a predictor of a per-kWh target is close to
+# regressing X/Y on Y -- confirmed empirically: including them pushed every category's held-out
+# R^2 to 0.98-1.00 (was 0.73-0.97) with "Lifetime production"/"Capacity factor" topping almost
+# every impact, the signature of leakage, not a real finding.
 FEATURES_COMMON = ["P_rated_kW", "Hub_height_m", "Diameter_m", "dist_rotor_m", "dist_nacelle_m",
-                    "dist_tower_m", "dist_to_grid_m", "turbine_age", "park_size"]
+                    "dist_tower_m", "dist_to_grid_m", "turbine_age", "park_size",
+                    "Blade_mass_kg", "Nacelle_mass_kg", "Tower_mass_kg", "Foundation_mass_kg"]
 FEATURES_ONSHORE = FEATURES_COMMON
 FEATURES_OFFSHORE = FEATURES_COMMON + ["sea_depth_m"]
 
@@ -82,10 +109,21 @@ FEATURE_LABELS = {
     "sea_depth_m": "Sea depth",
     "turbine_age": "Turbine age",
     "park_size": "Park size",
+    "Lifetime_production_kWh": "Lifetime production",
+    "Capacity_factors": "Capacity factor",
+    "Blade_mass_kg": "Blade mass",
+    "Nacelle_mass_kg": "Nacelle mass",
+    "Tower_mass_kg": "Tower mass",
+    "Foundation_mass_kg": "Foundation mass",
 }
 
 GEO_FEATURE_COLS = ["dist_rotor_m", "dist_nacelle_m", "dist_tower_m", "dist_to_grid_m", "sea_depth_m"]
-TURBINE_FEATURE_COLS = ["turbine_age", "park_size", "P_rated_kW", "Hub_height_m", "Diameter_m"]
+TURBINE_FEATURE_COLS = ["turbine_age", "park_size", "P_rated_kW", "Hub_height_m", "Diameter_m",
+                         "Lifetime_production_kWh", "Capacity_factors"]
+# Blade_mass_kg/Nacelle_mass_kg/Tower_mass_kg/Foundation_mass_kg are computed per turbine, not
+# loaded from a file -- see _add_mass_columns() below. Onshore/offshore use different
+# nacelle/rotor/foundation coefficients (mass_formulas.py), so they're filled in per category
+# inside load_feature_tables(), not read from TURBINES_XLSX or GEO_DIR.
 
 # --- impact categories: (full column name in results csv, short label, filename slug) ----
 IMPACTS = [
@@ -145,9 +183,43 @@ IMPACT_LABELS = {c: label for c, label, _ in IMPACTS}
 IMPACT_SLUGS = {c: slug for c, _, slug in IMPACTS}
 GWP_COL = "climate change - global warming potential (GWP100)[kg CO2-Eq]"
 
-# Palette (from the dataviz skill's validated reference palette, matching generate_paper_figures.py)
-BLUE, ORANGE = "#2a78d6", "#eb6834"
+# Short (2-5 char) abbreviations for the point labels in fig_max_importance_by_siting.png --
+# keyed by the same short label used as perm_matrix's column names.
+IMPACT_ABBREV = {
+    "Acidification": "AC",
+    "Climate change (total)": "CC",
+    "Climate change (biogenic)": "CCb",
+    "Climate change (fossil)": "CCf",
+    "Climate change (land use)": "CClu",
+    "Ecotoxicity, freshwater": "ET",
+    "Ecotoxicity, freshwater (inorg.)": "ETi",
+    "Ecotoxicity, freshwater (org.)": "ETo",
+    "Fossil resource use": "FRU",
+    "Eutrophication, freshwater": "EPf",
+    "Eutrophication, marine": "EPm",
+    "Eutrophication, terrestrial": "EPt",
+    "Human toxicity, carcinogenic": "HTc",
+    "Human toxicity, carc. (inorg.)": "HTci",
+    "Human toxicity, carc. (org.)": "HTco",
+    "Human toxicity, non-carc.": "HTnc",
+    "Human toxicity, non-carc. (inorg.)": "HTnci",
+    "Human toxicity, non-carc. (org.)": "HTnco",
+    "Ionising radiation": "IRP",
+    "Land use": "LU",
+    "Mineral resource use": "ADP",
+    "Ozone depletion": "ODP",
+    "Particulate matter": "PM",
+    "Photochemical ozone formation": "POF",
+    "Water use": "WU",
+}
+
+# Palette (from the dataviz skill's validated reference palette, matching generate_paper_figures.py).
+# BLUE/ORANGE/AQUA are the palette's first three categorical slots -- the only ones that validate
+# on the all-pairs pairlist (scatter/small-multiples), which is what the 3-turbine-category dot
+# plot below needs.
+BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 GRAY, TEXT_SECONDARY = "#c7c6c0", "#52514e"
+CATEGORY_COLORS = {"onshore": BLUE, "offshore_monopile": ORANGE, "offshore_semi-submersible": AQUA}
 
 
 def classify_category(filename: str) -> str:
@@ -155,6 +227,31 @@ def classify_category(filename: str) -> str:
     if m:
         return f"offshore_{m.group(1)}"
     return "onshore"
+
+
+def _add_mass_columns(merged: pd.DataFrame, category: str) -> pd.DataFrame:
+    """Blade_mass_kg, Nacelle_mass_kg, Tower_mass_kg, Foundation_mass_kg, kg -- computed from
+    P_rated_kW/Diameter_m/Hub_height_m(/sea_depth_m) via mass_formulas.py, the same closed-form
+    coefficients fleet_evaluation_lca_algebraic.py itself uses (not a re-fit or approximation).
+    Onshore and offshore use different nacelle/rotor coefficients and a different foundation
+    formula entirely (bucketed by foundation type for offshore), so this must run per category,
+    not once globally."""
+    P = merged["P_rated_kW"].astype(float)
+    d = merged["Diameter_m"].astype(float)
+    h = merged["Hub_height_m"].astype(float)
+
+    merged["Tower_mass_kg"] = M_tower(d, h)
+    if category == "onshore":
+        merged["Nacelle_mass_kg"] = M_nacelle_onshore(P)
+        merged["Blade_mass_kg"] = M_rotor_onshore(d)
+        merged["Foundation_mass_kg"] = M_found_onshore(d, h)
+    else:
+        merged["Nacelle_mass_kg"] = M_nacelle_offshore(P)
+        merged["Blade_mass_kg"] = M_rotor_offshore(d)
+        sea_depth = merged["sea_depth_m"].astype(float)
+        found = foundation_masses_offshore(category, P, sea_depth)
+        merged["Foundation_mass_kg"] = sum(found.values())
+    return merged
 
 
 def load_feature_tables() -> dict[str, pd.DataFrame]:
@@ -173,6 +270,7 @@ def load_feature_tables() -> dict[str, pd.DataFrame]:
 
         merged = res[IMPACT_COLUMNS].join(geo[GEO_FEATURE_COLS], how="inner")
         merged = merged.join(turbines[TURBINE_FEATURE_COLS], how="inner")
+        merged = _add_mass_columns(merged, category)
         frames_by_category[category].append(merged)
 
     tables = {}
@@ -354,10 +452,100 @@ def plot_heatmap(matrices: dict[str, pd.DataFrame], modeled_categories: list[str
     return out_path
 
 
+def plot_max_importance_by_type(perm_matrices: dict[str, pd.DataFrame],
+                                 modeled_categories: list[str], out_path: Path) -> Path:
+    """One point per (feature, turbine category): that feature's LARGEST permutation importance
+    across all 25 impact categories, labeled with which impact category produced it. Replaces
+    the paper draft's placeholder "Example visualization (fake data)" figure with the real
+    numbers from perm_matrices (raw, un-normalized permutation importance -- NOT the
+    column-normalized `perm_shares` used by the heatmap, since "share of column" and "max
+    R^2-drop across columns" answer different questions).
+
+    Only categories in `modeled_categories` are plotted (offshore spar has 2 turbines
+    fleet-wide, below MIN_SAMPLES, and was never modeled)."""
+    all_features = sorted({f for cat in modeled_categories for f in perm_matrices[cat].index})
+    # Order rows by the largest max-importance any category reaches for that feature, so the
+    # most-influential features read at the top (barh/scatter convention already used elsewhere
+    # in this file).
+    row_max = {f: max(perm_matrices[cat].loc[f].max() for cat in modeled_categories
+                       if f in perm_matrices[cat].index) for f in all_features}
+    ordered_features = sorted(all_features, key=lambda f: row_max[f])
+    y_pos = {f: i for i, f in enumerate(ordered_features)}
+    # Small per-category vertical dodge so near-equal values across categories start out
+    # separated -- adjust_text (below) still does the real collision avoidance, but a good
+    # starting layout means it has to move points less.
+    dodge = {cat: (i - (len(modeled_categories) - 1) / 2) * 0.20
+             for i, cat in enumerate(modeled_categories)}
+
+    fig, ax = plt.subplots(figsize=(10, 0.62 * len(ordered_features) + 1.8))
+
+    all_xs, all_ys, texts, used_abbrevs = [], [], [], set()
+    for cat in modeled_categories:
+        mat = perm_matrices[cat]
+        xs, ys, labels = [], [], []
+        for f in ordered_features:
+            if f not in mat.index:
+                continue
+            best_impact = mat.loc[f].idxmax()
+            xs.append(mat.loc[f, best_impact])
+            ys.append(y_pos[f] + dodge[cat])
+            abbrev = IMPACT_ABBREV.get(best_impact, best_impact[:3])
+            labels.append(abbrev)
+            used_abbrevs.add(abbrev)
+        ax.scatter(xs, ys, s=75, color=CATEGORY_COLORS[cat], edgecolors="white",
+                   linewidths=0.8, zorder=3, label=CATEGORY_TITLES[cat])
+        all_xs.extend(xs)
+        all_ys.extend(ys)
+        for x, y, lbl in zip(xs, ys, labels):
+            texts.append(ax.text(x, y, lbl, ha="center", va="center", fontsize=6.5,
+                                  color=TEXT_SECONDARY, zorder=4))
+
+    # Real collision avoidance (not just a fixed offset): repels labels from every OTHER label
+    # AND from every marker (all_xs/all_ys, all categories at once, not just the label's own
+    # point) until nothing overlaps, drawing a short connector line for any label that had to
+    # move away from its point.
+    adjust_text(texts, x=all_xs, y=all_ys, ax=ax,
+                arrowprops=dict(arrowstyle="-", color=GRAY, lw=0.6),
+                expand=(1.3, 1.6), force_text=(0.3, 0.6), force_points=(0.3, 0.6))
+
+    ax.set_yticks(range(len(ordered_features)))
+    ax.set_yticklabels([FEATURE_LABELS[f] for f in ordered_features], fontsize=9.5)
+    ax.set_xlabel("Maximum permutation importance across impact categories\n"
+                   "(mean R² drop when shuffled, held-out test set)", fontsize=9.5)
+    ax.set_title("What drives per-turbine impacts, by feature and siting",
+                  fontsize=13, fontweight="bold", x=0.0, ha="left")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.spines[["left", "bottom"]].set_color(GRAY)
+    ax.tick_params(colors=TEXT_SECONDARY)
+    ax.grid(axis="x", color=GRAY, linewidth=0.6, alpha=0.5, zorder=0)
+    ax.set_axisbelow(True)
+    ax.set_xlim(left=0)
+    ax.legend(frameon=False, fontsize=9.5, loc="lower right")
+
+    # Abbreviation key: only the impacts that actually appear as a "winning" label somewhere in
+    # this figure, not the full 25 -- a legend listing entries nobody can find on the plot is
+    # worse than no legend.
+    key_entries = sorted((abbrev, full) for full, abbrev in IMPACT_ABBREV.items()
+                          if abbrev in used_abbrevs)
+    n_cols = 3
+    rows_per_col = -(-len(key_entries) // n_cols)  # ceil
+    fig.tight_layout()  # auto margins for title/yticks/xlabel first
+    fig.subplots_adjust(bottom=0.09 + 0.022 * rows_per_col)  # then carve out room for the key below
+    for i, (abbrev, full) in enumerate(key_entries):
+        col, row = divmod(i, rows_per_col)
+        fig.text(0.02 + col * 0.33, 0.045 + 0.022 * (rows_per_col - 1 - row),
+                  f"{abbrev} = {full}", fontsize=7, color=TEXT_SECONDARY, transform=fig.transFigure)
+
+    fig.savefig(out_path, dpi=170)
+    plt.close(fig)
+    print(f"Saved {out_path}")
+    return out_path
+
+
 def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict]],
                     r2_by_category: dict[str, list[float]], heatmap_path: Path,
                     grouped_heatmap_path: Path, cluster_members: dict[str, list[list[str]]],
-                    modeled_categories: list[str]):
+                    modeled_categories: list[str], max_importance_path: Path = None):
     lines = []
     lines.append("# What actually drives per-turbine impacts, by category and siting")
     lines.append("")
@@ -459,6 +647,31 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
         "impact-by-impact."
     )
     lines.append("")
+
+    if max_importance_path is not None:
+        lines.append("## Summary: each feature's single best impact category, by siting")
+        lines.append("")
+        lines.append(f"![Max permutation importance by feature and siting]({max_importance_path.relative_to(REPO)})")
+        lines.append("")
+        lines.append(
+            "One point per (feature, turbine category): that feature's LARGEST permutation "
+            "importance across all 25 impact categories (raw R² drop, not a column-normalized "
+            "share as in the heatmap above), labeled with the impact category that produced it "
+            "(abbreviations in the table below). Component masses (blade/nacelle/tower/"
+            "foundation) are deterministic functions of rated power, hub height, rotor diameter "
+            "and (offshore) sea depth already in the feature list -- see the Multicollinearity "
+            "section: where a mass and its generating dimension both rank high, read that as one "
+            "finding reported twice, not two independent drivers."
+        )
+        lines.append("")
+        lines.append("| Abbrev. | Impact category | Abbrev. | Impact category |")
+        lines.append("|---|---|---|---|")
+        abbrev_items = list(IMPACT_ABBREV.items())
+        for i in range(0, len(abbrev_items), 2):
+            left = f"{abbrev_items[i][1]} | {abbrev_items[i][0]}"
+            right = f"{abbrev_items[i+1][1]} | {abbrev_items[i+1][0]}" if i + 1 < len(abbrev_items) else " | "
+            lines.append(f"| {left} | {right} |")
+        lines.append("")
 
     for category in CATEGORY_ORDER:
         df = tables[category]
@@ -582,6 +795,7 @@ def main():
     summary: dict[str, list[dict]] = {c: [] for c in CATEGORY_ORDER}
     r2_by_category: dict[str, list[float]] = {c: [] for c in modeled_categories}
     perm_shares: dict[str, pd.DataFrame] = {}
+    perm_matrices_raw: dict[str, pd.DataFrame] = {}
     grouped_shares: dict[str, pd.DataFrame] = {}
     cluster_members: dict[str, list[list[str]]] = {}
 
@@ -629,6 +843,7 @@ def main():
 
         # normalize each column (impact) so permutation importances sum to 1 -> comparable share
         perm_shares[category] = perm_matrix.div(perm_matrix.sum(axis=0), axis=1)
+        perm_matrices_raw[category] = perm_matrix.copy()  # un-normalized, for the max-across-impacts plot below
         grouped_shares[category] = grouped_matrix.div(grouped_matrix.sum(axis=0), axis=1)
         # Cache the raw matrices so a plot-only fix (e.g. colorbar layout) never needs a full
         # RF+permutation retrain again -- that's the expensive part, not the plotting.
@@ -653,8 +868,11 @@ def main():
                     if len(tables[c]) > 0]
     plot_known_formula_scatter(tables["onshore"], offshore_dfs)
 
+    max_importance_path = plot_max_importance_by_type(
+        perm_matrices_raw, modeled_categories, OUT / "fig_max_importance_by_siting.png")
+
     write_markdown(tables, summary, r2_by_category, heatmap_path, grouped_heatmap_path,
-                    cluster_members, modeled_categories)
+                    cluster_members, modeled_categories, max_importance_path)
 
 
 if __name__ == "__main__":

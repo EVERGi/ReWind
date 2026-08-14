@@ -1,8 +1,8 @@
 cluster_members
-"Rated power, Hub height, Rotor diameter, Turbine age"
+"Rated power, Hub height, Rotor diameter, Turbine age, Blade mass, Nacelle mass, Tower mass"
 Transport dist. (rotor)
 Transport dist. (nacelle)
 Transport dist. (tower)
 Cable length (grid dist.)
 Park size
-Sea depth
+"Foundation mass, Sea depth"

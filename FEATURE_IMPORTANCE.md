@@ -8,7 +8,7 @@ Onshore and offshore turbines are modeled **separately**, and offshore is furthe
 
 A random forest (300 trees, max depth 12) trained per (turbine category, impact category) pair, up to 4 x 25 = 100 models, on an 80/20 train/test split. Two rankings per model, computed two different ways so neither's blind spots go unchecked: the model's own impurity-based `feature_importances_`, and permutation importance (how much held-out R² drops when a single feature is shuffled, averaged over 15 repeats). Permutation is the more trustworthy of the two, since impurity-based importance is known to inflate high-cardinality continuous features.
 
-Onshore uses 9 features (no sea depth, always 0). Offshore categories use 10 features (adds sea depth). Categories with fewer than 30 turbines are reported but not modeled: an 80/20 split on a handful of rows doesn't produce a meaningful ranking.
+Onshore uses 13 features (no sea depth, always 0). Offshore categories use 14 features (adds sea depth). Categories with fewer than 30 turbines are reported but not modeled: an 80/20 split on a handful of rows doesn't produce a meaningful ranking.
 
 ## Multicollinearity: why individual rankings need a second opinion
 
@@ -16,11 +16,11 @@ Permutation importance is known to misattribute credit when predictors are corre
 
 Mitigation follows scikit-learn's own documented approach for this problem (*Permutation Importance with Multicollinear or Correlated Features*): cluster features by hierarchical clustering on Spearman-correlation distance (merge at |r| ≥ 0.7, a standard high-correlation cutoff), then shuffle every feature in a cluster together. This credits the cluster as a whole instead of letting the credit land arbitrarily on whichever member wins tie-breaking. Both the individual ranking (heatmap and per-impact figures above) and this clustered ranking are reported; where they agree, the individual ranking is trustworthy. Where a feature's individual rank is high but it's clustered with others, read the *cluster*, not that one feature, as the real finding.
 
-**Onshore clusters**: Rated power + Hub height + Rotor diameter + Turbine age; Transport dist. (rotor); Transport dist. (nacelle); Transport dist. (tower); Cable length (grid dist.); Park size.
+**Onshore clusters**: Rated power + Hub height + Rotor diameter + Turbine age + Blade mass + Nacelle mass + Tower mass + Foundation mass; Transport dist. (rotor); Transport dist. (nacelle); Transport dist. (tower); Cable length (grid dist.); Park size.
 
-**Offshore – monopile clusters**: Rated power + Hub height + Rotor diameter + Turbine age; Transport dist. (rotor); Transport dist. (nacelle); Transport dist. (tower); Cable length (grid dist.); Park size; Sea depth.
+**Offshore – monopile clusters**: Rated power + Hub height + Rotor diameter + Turbine age + Blade mass + Nacelle mass + Tower mass; Transport dist. (rotor); Transport dist. (nacelle); Transport dist. (tower); Cable length (grid dist.); Park size; Foundation mass + Sea depth.
 
-**Offshore – semi-submersible clusters**: Rated power + Hub height + Rotor diameter + Turbine age; Transport dist. (rotor) + Transport dist. (nacelle); Transport dist. (tower); Cable length (grid dist.); Park size; Sea depth.
+**Offshore – semi-submersible clusters**: Rated power + Hub height + Rotor diameter + Turbine age + Blade mass + Nacelle mass + Tower mass + Foundation mass; Transport dist. (rotor) + Transport dist. (nacelle); Transport dist. (tower); Cable length (grid dist.); Park size; Sea depth.
 
 ![Clustered feature importance heatmap](figures/feature_importance/fig_grouped_importance_heatmap.png)
 
@@ -32,37 +32,59 @@ Each per-impact figure above also marks individually non-significant features "(
 
 Each row of each panel is a feature, each column an impact category; color is that feature's permutation importance as a share of the total within that column (columns sum to 1). Reading across a panel shows whether one or two features dominate every impact (a mostly-uniform column pattern) or whether the ranking reshuffles impact-by-impact.
 
+## Summary: each feature's single best impact category, by siting
+
+![Max permutation importance by feature and siting](figures/feature_importance/fig_max_importance_by_siting.png)
+
+One point per (feature, turbine category): that feature's LARGEST permutation importance across all 25 impact categories (raw R² drop, not a column-normalized share as in the heatmap above), labeled with the impact category that produced it (abbreviations in the table below). Component masses (blade/nacelle/tower/foundation) are deterministic functions of rated power, hub height, rotor diameter and (offshore) sea depth already in the feature list -- see the Multicollinearity section: where a mass and its generating dimension both rank high, read that as one finding reported twice, not two independent drivers.
+
+| Abbrev. | Impact category | Abbrev. | Impact category |
+|---|---|---|---|
+| AC | Acidification | CC | Climate change (total) |
+| CCb | Climate change (biogenic) | CCf | Climate change (fossil) |
+| CClu | Climate change (land use) | ET | Ecotoxicity, freshwater |
+| ETi | Ecotoxicity, freshwater (inorg.) | ETo | Ecotoxicity, freshwater (org.) |
+| FRU | Fossil resource use | EPf | Eutrophication, freshwater |
+| EPm | Eutrophication, marine | EPt | Eutrophication, terrestrial |
+| HTc | Human toxicity, carcinogenic | HTci | Human toxicity, carc. (inorg.) |
+| HTco | Human toxicity, carc. (org.) | HTnc | Human toxicity, non-carc. |
+| HTnci | Human toxicity, non-carc. (inorg.) | HTnco | Human toxicity, non-carc. (org.) |
+| IRP | Ionising radiation | LU | Land use |
+| ADP | Mineral resource use | ODP | Ozone depletion |
+| PM | Particulate matter | POF | Photochemical ozone formation |
+| WU | Water use |  |  |
+
 ## Onshore (n=72,173)
 
-Held-out R² across the 25 impact categories ranges 0.729–0.965 (mean 0.918).
+Held-out R² across the 25 impact categories ranges 0.728–0.965 (mean 0.917).
 
 | Impact category | Held-out R² | Top feature (permutation) | Significant (p<0.05) |
 |---|---|---|---|
-| Acidification | 0.917 | Rated power | 9/9 |
-| Climate change (total) | 0.940 | Rated power | 9/9 |
-| Climate change (biogenic) | 0.921 | Rated power | 9/9 |
-| Climate change (fossil) | 0.940 | Rated power | 9/9 |
-| Climate change (land use) | 0.729 | Rated power | 9/9 |
-| Ecotoxicity, freshwater | 0.922 | Rated power | 9/9 |
-| Ecotoxicity, freshwater (inorg.) | 0.922 | Rated power | 9/9 |
-| Ecotoxicity, freshwater (org.) | 0.938 | Rated power | 9/9 |
-| Fossil resource use | 0.937 | Rated power | 9/9 |
-| Eutrophication, freshwater | 0.922 | Rated power | 9/9 |
-| Eutrophication, marine | 0.940 | Rated power | 9/9 |
-| Eutrophication, terrestrial | 0.936 | Rated power | 9/9 |
-| Human toxicity, carcinogenic | 0.938 | Rated power | 9/9 |
-| Human toxicity, carc. (inorg.) | 0.922 | Rated power | 9/9 |
-| Human toxicity, carc. (org.) | 0.965 | Rated power | 9/9 |
-| Human toxicity, non-carc. | 0.901 | Cable length (grid dist.) | 9/9 |
-| Human toxicity, non-carc. (inorg.) | 0.901 | Cable length (grid dist.) | 9/9 |
-| Human toxicity, non-carc. (org.) | 0.905 | Cable length (grid dist.) | 9/9 |
-| Ionising radiation | 0.907 | Rated power | 9/9 |
-| Land use | 0.913 | Rated power | 9/9 |
-| Mineral resource use | 0.909 | Cable length (grid dist.) | 9/9 |
-| Ozone depletion | 0.941 | Rated power | 9/9 |
-| Particulate matter | 0.925 | Rated power | 9/9 |
-| Photochemical ozone formation | 0.930 | Rated power | 9/9 |
-| Water use | 0.938 | Rated power | 9/9 |
+| Acidification | 0.915 | Nacelle mass | 13/13 |
+| Climate change (total) | 0.939 | Rated power | 13/13 |
+| Climate change (biogenic) | 0.920 | Transport dist. (nacelle) | 13/13 |
+| Climate change (fossil) | 0.939 | Nacelle mass | 13/13 |
+| Climate change (land use) | 0.728 | Hub height | 13/13 |
+| Ecotoxicity, freshwater | 0.923 | Rated power | 13/13 |
+| Ecotoxicity, freshwater (inorg.) | 0.923 | Nacelle mass | 13/13 |
+| Ecotoxicity, freshwater (org.) | 0.937 | Nacelle mass | 13/13 |
+| Fossil resource use | 0.932 | Nacelle mass | 13/13 |
+| Eutrophication, freshwater | 0.922 | Hub height | 13/13 |
+| Eutrophication, marine | 0.936 | Rated power | 13/13 |
+| Eutrophication, terrestrial | 0.932 | Rated power | 13/13 |
+| Human toxicity, carcinogenic | 0.938 | Rated power | 13/13 |
+| Human toxicity, carc. (inorg.) | 0.918 | Nacelle mass | 13/13 |
+| Human toxicity, carc. (org.) | 0.965 | Rated power | 13/13 |
+| Human toxicity, non-carc. | 0.901 | Cable length (grid dist.) | 13/13 |
+| Human toxicity, non-carc. (inorg.) | 0.901 | Cable length (grid dist.) | 13/13 |
+| Human toxicity, non-carc. (org.) | 0.904 | Cable length (grid dist.) | 13/13 |
+| Ionising radiation | 0.910 | Transport dist. (tower) | 13/13 |
+| Land use | 0.913 | Park size | 13/13 |
+| Mineral resource use | 0.909 | Cable length (grid dist.) | 13/13 |
+| Ozone depletion | 0.939 | Rated power | 13/13 |
+| Particulate matter | 0.922 | Rated power | 13/13 |
+| Photochemical ozone formation | 0.926 | Rated power | 13/13 |
+| Water use | 0.935 | Nacelle mass | 13/13 |
 
 #### Acidification
 
@@ -166,35 +188,35 @@ Held-out R² across the 25 impact categories ranges 0.729–0.965 (mean 0.918).
 
 ## Offshore – monopile (n=4,122)
 
-Held-out R² across the 25 impact categories ranges 0.965–0.989 (mean 0.978).
+Held-out R² across the 25 impact categories ranges 0.964–0.988 (mean 0.977).
 
 | Impact category | Held-out R² | Top feature (permutation) | Significant (p<0.05) |
 |---|---|---|---|
-| Acidification | 0.978 | Rotor diameter | 10/10 |
-| Climate change (total) | 0.975 | Rotor diameter | 10/10 |
-| Climate change (biogenic) | 0.989 | Transport dist. (nacelle) | 10/10 |
-| Climate change (fossil) | 0.976 | Rotor diameter | 10/10 |
-| Climate change (land use) | 0.965 | Transport dist. (tower) | 10/10 |
-| Ecotoxicity, freshwater | 0.977 | Rotor diameter | 10/10 |
-| Ecotoxicity, freshwater (inorg.) | 0.979 | Rotor diameter | 10/10 |
-| Ecotoxicity, freshwater (org.) | 0.971 | Rotor diameter | 10/10 |
-| Fossil resource use | 0.976 | Rotor diameter | 10/10 |
-| Eutrophication, freshwater | 0.985 | Transport dist. (nacelle) | 10/10 |
-| Eutrophication, marine | 0.980 | Rotor diameter | 10/10 |
-| Eutrophication, terrestrial | 0.978 | Rotor diameter | 10/10 |
-| Human toxicity, carcinogenic | 0.977 | Rotor diameter | 10/10 |
-| Human toxicity, carc. (inorg.) | 0.977 | Rotor diameter | 10/10 |
-| Human toxicity, carc. (org.) | 0.986 | Rotor diameter | 10/10 |
-| Human toxicity, non-carc. | 0.982 | Cable length (grid dist.) | 10/10 |
-| Human toxicity, non-carc. (inorg.) | 0.982 | Cable length (grid dist.) | 10/10 |
-| Human toxicity, non-carc. (org.) | 0.988 | Cable length (grid dist.) | 10/10 |
-| Ionising radiation | 0.982 | Transport dist. (nacelle) | 10/10 |
-| Land use | 0.966 | Transport dist. (tower) | 10/10 |
-| Mineral resource use | 0.988 | Cable length (grid dist.) | 10/10 |
-| Ozone depletion | 0.979 | Rotor diameter | 10/10 |
-| Particulate matter | 0.975 | Rotor diameter | 10/10 |
-| Photochemical ozone formation | 0.976 | Rotor diameter | 10/10 |
-| Water use | 0.974 | Rotor diameter | 10/10 |
+| Acidification | 0.979 | Transport dist. (tower) | 14/14 |
+| Climate change (total) | 0.975 | Blade mass | 14/14 |
+| Climate change (biogenic) | 0.988 | Transport dist. (nacelle) | 14/14 |
+| Climate change (fossil) | 0.975 | Blade mass | 14/14 |
+| Climate change (land use) | 0.964 | Transport dist. (tower) | 14/14 |
+| Ecotoxicity, freshwater | 0.977 | Cable length (grid dist.) | 14/14 |
+| Ecotoxicity, freshwater (inorg.) | 0.978 | Cable length (grid dist.) | 14/14 |
+| Ecotoxicity, freshwater (org.) | 0.970 | Transport dist. (tower) | 14/14 |
+| Fossil resource use | 0.975 | Blade mass | 14/14 |
+| Eutrophication, freshwater | 0.985 | Transport dist. (nacelle) | 14/14 |
+| Eutrophication, marine | 0.978 | Transport dist. (tower) | 14/14 |
+| Eutrophication, terrestrial | 0.976 | Transport dist. (tower) | 14/14 |
+| Human toxicity, carcinogenic | 0.977 | Blade mass | 14/14 |
+| Human toxicity, carc. (inorg.) | 0.976 | Blade mass | 14/14 |
+| Human toxicity, carc. (org.) | 0.986 | Rotor diameter | 14/14 |
+| Human toxicity, non-carc. | 0.981 | Cable length (grid dist.) | 14/14 |
+| Human toxicity, non-carc. (inorg.) | 0.981 | Cable length (grid dist.) | 14/14 |
+| Human toxicity, non-carc. (org.) | 0.986 | Cable length (grid dist.) | 14/14 |
+| Ionising radiation | 0.981 | Transport dist. (nacelle) | 14/14 |
+| Land use | 0.964 | Transport dist. (tower) | 14/14 |
+| Mineral resource use | 0.981 | Cable length (grid dist.) | 14/14 |
+| Ozone depletion | 0.978 | Transport dist. (rotor) | 14/14 |
+| Particulate matter | 0.974 | Rotor diameter | 14/14 |
+| Photochemical ozone formation | 0.974 | Transport dist. (tower) | 14/14 |
+| Water use | 0.973 | Blade mass | 14/14 |
 
 #### Acidification
 
@@ -298,35 +320,35 @@ Held-out R² across the 25 impact categories ranges 0.965–0.989 (mean 0.978).
 
 ## Offshore – semi-submersible (n=1,255)
 
-Held-out R² across the 25 impact categories ranges 0.984–1.000 (mean 0.998).
+Held-out R² across the 25 impact categories ranges 0.970–0.999 (mean 0.989).
 
 | Impact category | Held-out R² | Top feature (permutation) | Significant (p<0.05) |
 |---|---|---|---|
-| Acidification | 0.998 | Rated power | 10/10 |
-| Climate change (total) | 0.999 | Rated power | 10/10 |
-| Climate change (biogenic) | 0.995 | Rated power | 10/10 |
-| Climate change (fossil) | 0.999 | Rated power | 10/10 |
-| Climate change (land use) | 0.999 | Rated power | 10/10 |
-| Ecotoxicity, freshwater | 0.998 | Rated power | 10/10 |
-| Ecotoxicity, freshwater (inorg.) | 0.999 | Rated power | 10/10 |
-| Ecotoxicity, freshwater (org.) | 0.999 | Rated power | 10/10 |
-| Fossil resource use | 1.000 | Rated power | 10/10 |
-| Eutrophication, freshwater | 1.000 | Rated power | 10/10 |
-| Eutrophication, marine | 1.000 | Rated power | 10/10 |
-| Eutrophication, terrestrial | 1.000 | Rated power | 10/10 |
-| Human toxicity, carcinogenic | 0.995 | Rated power | 10/10 |
-| Human toxicity, carc. (inorg.) | 0.987 | Rated power | 10/10 |
-| Human toxicity, carc. (org.) | 0.999 | Rated power | 10/10 |
-| Human toxicity, non-carc. | 0.999 | Rated power | 10/10 |
-| Human toxicity, non-carc. (inorg.) | 0.999 | Rated power | 10/10 |
-| Human toxicity, non-carc. (org.) | 0.998 | Rated power | 10/10 |
-| Ionising radiation | 0.999 | Rated power | 10/10 |
-| Land use | 0.999 | Rated power | 10/10 |
-| Mineral resource use | 0.984 | Rated power | 10/10 |
-| Ozone depletion | 0.999 | Rated power | 10/10 |
-| Particulate matter | 0.999 | Rated power | 10/10 |
-| Photochemical ozone formation | 0.999 | Rated power | 10/10 |
-| Water use | 0.999 | Rated power | 10/10 |
+| Acidification | 0.990 | Foundation mass | 14/14 |
+| Climate change (total) | 0.991 | Foundation mass | 14/14 |
+| Climate change (biogenic) | 0.991 | Transport dist. (rotor) | 14/14 |
+| Climate change (fossil) | 0.991 | Foundation mass | 14/14 |
+| Climate change (land use) | 0.972 | Foundation mass | 13/14 |
+| Ecotoxicity, freshwater | 0.989 | Foundation mass | 14/14 |
+| Ecotoxicity, freshwater (inorg.) | 0.991 | Foundation mass | 14/14 |
+| Ecotoxicity, freshwater (org.) | 0.989 | Foundation mass | 13/14 |
+| Fossil resource use | 0.989 | Foundation mass | 13/14 |
+| Eutrophication, freshwater | 0.994 | Foundation mass | 14/14 |
+| Eutrophication, marine | 0.990 | Foundation mass | 13/14 |
+| Eutrophication, terrestrial | 0.990 | Park size | 13/14 |
+| Human toxicity, carcinogenic | 0.983 | Foundation mass | 13/14 |
+| Human toxicity, carc. (inorg.) | 0.973 | Foundation mass | 13/14 |
+| Human toxicity, carc. (org.) | 0.993 | Foundation mass | 14/14 |
+| Human toxicity, non-carc. | 0.999 | Park size | 14/14 |
+| Human toxicity, non-carc. (inorg.) | 0.999 | Foundation mass | 14/14 |
+| Human toxicity, non-carc. (org.) | 0.998 | Foundation mass | 14/14 |
+| Ionising radiation | 0.999 | Transport dist. (nacelle) | 14/14 |
+| Land use | 0.970 | Foundation mass | 11/14 |
+| Mineral resource use | 0.983 | Cable length (grid dist.) | 13/14 |
+| Ozone depletion | 0.992 | Foundation mass | 14/14 |
+| Particulate matter | 0.988 | Foundation mass | 13/14 |
+| Photochemical ozone formation | 0.990 | Foundation mass | 14/14 |
+| Water use | 0.990 | Foundation mass | 13/14 |
 
 #### Acidification
 
@@ -460,4 +482,4 @@ Neither panel shows a clean trend line, and that's expected given the importance
 
 ## Limitations
 
-This ranks 9-10 candidate features, not the full input space the algebraic model actually uses (component-level material percentage splits, park size interacting with maintenance/transport terms, per-country background electricity activities). A held-out R² in the ranges reported above means the ranking is trustworthy for these features on the impacts where R² is high; treat rankings for impacts with low R² more cautiously, since the model is explaining less of that impact's variance to begin with. The offshore spar category has only 2 turbines fleet-wide and isn't modeled at all.
+This ranks 13-14 candidate features, not the full input space the algebraic model actually uses (component-level material percentage splits, park size interacting with maintenance/transport terms, per-country background electricity activities). A held-out R² in the ranges reported above means the ranking is trustworthy for these features on the impacts where R² is high; treat rankings for impacts with low R² more cautiously, since the model is explaining less of that impact's variance to begin with. The offshore spar category has only 2 turbines fleet-wide and isn't modeled at all.
