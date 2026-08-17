@@ -1709,11 +1709,21 @@ way, without any approximation.
 
 **Option A** builds a symbolic surrogate model (lca_algebraic) with exact piecewise material
 scaling and exact transport formulas, reducing 4 328 turbine evaluations from an estimated 32
-hours to 0.11 seconds (~1 000 000× speedup). Validated against exact Brightway `bc.LCA` results
-on the same turbines, the mean absolute error is 0.86% and the maximum is 2.03% in GWP100,
-well within the 10–30% inherent uncertainty of LCA input data. The residual error traces
-entirely to using fleet-average transport distances rather than per-turbine location lookups
-(later resolved, see "Completed 15 Jul 2026" above).
+hours to 0.11 seconds (~1 000 000× speedup). The 0.86%/2.03% figure below this paragraph in
+early drafts was from an intermediate version (v2, pre per-turbine-geo, validated against
+Option B/`redo_lci` on only 50 DK turbines) and is superseded — see "Completed 15 Jul 2026"
+onward for what changed and why. **Current, final numbers** (all 5 originally-validated countries, full
+turbine × stage × 25-method comparison against the exact baseline, see "Completed 31 Jul 2026"
+and "15 Aug 2026" below): GWP100 Total-stage abs-max error is ≤1.1% for 11 of 13 country/bucket
+combinations, with two disclosed outliers (DE offshore Monopile/Semi-submersible, 35.5%/17.7%
+abs-max) isolated to near-zero sub-metrics ("climate change: biogenic", freshwater
+eutrophication) where both baseline and algebraic values are ~2e-5 to begin with — not a
+transport-distance artifact, and not representative of the headline GWP100 metric's actual
+accuracy. The single-cause "transport distances" explanation in earlier drafts of this
+paragraph was wrong even when written: at least four more distinct root causes were found and
+fixed after it (extrapolation-vs-clamp bug, transformer formula, disposal-overwrite bug,
+land-use frozen-activity bug, buses.csv coverage — see the "Completed" sections below in
+date order for the full trail).
 
 **Option B** retains the exact per-turbine inventory and eliminates repeated matrix
 factorisations via `redo_lci`, delivering 0% error with a 2.3× speedup (measured: 581s vs 1337s
@@ -1845,3 +1855,65 @@ Deleted `extract_missing_country_grid_points.py` and its output
 extraction superseded by the 38-country file. `grid.gpkg` (692 MB, the raw Gridfinder download)
 added to `.gitignore`: never belonged in git, was never tracked, just needed excluding
 explicitly.
+
+---
+
+## Completed 15 Aug 2026: second validation batch (BY/CY/FO/IS/XK), one real bug found
+
+Every country past the original 5 (DK/BE/NO/DE/GB) had been rolled out "algebraic-only" — no
+exact baseline, accepted on a fleet-mean plausibility check only (GWP100 mean within
+0.0135–0.0345 kg CO2eq/kWh, no NaN/zero/outlier). That's 33 of 38 countries, including Spain's
+9 198 turbines, with zero per-turbine correctness evidence. Spot-checked 5 of those 33 against
+the exact baseline: BY, CY, FO, IS, XK — chosen because they're exactly the 5 countries with
+**zero buses.csv coverage** (see "Completed 31 Jul 2026" above), the same root cause that once
+caused 20–60% abs-max errors in DE/GB/BE before it was caught. All 5 are small (12/57/19/2/9
+onshore turbines, 0 offshore), so `fleet_evaluation_v03_elie.py`'s `SAMPLE_CONFIG` was set to
+each country's full turbine count instead of a sample — 100% coverage, not sampling. (Also
+added a zero-offshore-turbine guard to that script, since these 5 have no offshore fleet and the
+existing offshore code path would have divided by zero.)
+
+Result, full turbine × 25-method × 6-stage comparison, GWP100 Total-stage only:
+
+| Country | n turbines | abs-mean error | abs-max error |
+|---|---|---|---|
+| BY | 12 | 0.07% | 0.30% |
+| CY | 57 | 0.01% | 0.03% |
+| **FO** | **19** | **2.79%** | **6.08%** |
+| IS | 2 | 0.02% | 0.02% |
+| XK | 9 | 0.19% | 0.19% |
+
+BY/CY/IS/XK are clean, in line with (or better than) the originally-validated countries — good
+evidence the plausibility-only acceptance for most of the 33 remaining countries is reasonable.
+FO (Faroe Islands) is not: all 19 turbines show elevated error (not one outlier turbine),
+concentrated in the Assembly stage.
+
+**Root cause, confirmed by diffing raw `create_dictionary_update()` output for two FO
+turbines with otherwise-identical declared parameters (P=900kW, h=45m, d=44m, park_size=13):**
+not a surrogate-model issue, not a transport-distance issue — a pre-existing bug in the exact
+baseline itself. `find_activities()` (`REWIND/REWIND/prepare_inventories.py:376-378`) falls
+back to `filtered_db[0]` ("first available", effectively arbitrary/unstable across calls)
+whenever a turbine's location hierarchy (FO → RER → Europe without CH → GLO → RoW) matches no
+available regional electricity-market dataset — which happens for every FO turbine, since
+ecoinvent has no Faroese electricity market and this location apparently doesn't successfully
+fall through to RER/GLO either. Two turbines in the same Faroese wind farm, same declared
+parameters, ended up with `market for electricity, high voltage {AO}` (Angola) vs `{ID}`
+(Indonesia) for the identical Assembly-phase electricity quantity (40 100 kWh) — two unrelated
+countries' grid mixes, picked essentially at random per turbine. Confirmed via
+`grep -c "No matching location found" logs/baseline_second_batch.log`: fires exactly 19 times,
+only during the FO run, never for BY/CY/IS/XK or in the original 5-country baseline log.
+
+This is a defect in the exact baseline (`fleet_evaluation_v03_elie.py` /
+`prepare_inventories.py`), not something `lca_algebraic` introduces — but the surrogate can't
+reproduce it either way, since it builds one symbolic inventory per country from a single
+reference turbine and assumes that background linkage is shared across the bucket. It only
+fires when a turbine's location resolves to no ecoinvent-covered electricity-market region at
+all, which is rare (didn't hit BY/CY/IS/XK or the original 5 countries) but plausible for other
+small/non-standard territories among the remaining 32.
+
+**Decision: document, don't fix.** Given the deadline and that this is isolated, bounded (one
+life-cycle stage, one small-fleet country in the current sample), and pre-existing in the
+baseline rather than introduced by this work, this is recorded here as a known, disclosed
+limitation rather than patched. It should be named explicitly in the thesis limitations section:
+fleet-wide accuracy is empirically confirmed for 10 of 38 countries (DK/BE/NO/DE/GB/BY/CY/IS/XK,
+FO showing one specific and root-caused exception) and extrapolated by plausibility check for
+the remaining 28.

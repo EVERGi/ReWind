@@ -38,6 +38,25 @@ n=203). Germany, the largest fleet (27,916 turbines, 36% of the EU total), sits 
 middle (0.02267).
 
 Fleet-size-weighted mean (the true population mean, computed once over every turbine): 0.02138
+
+---
+
+## 1b. Offshore turbine count check (Dominik, review comment 14 Aug 2026)
+
+Question: did we remove any offshore turbines with a positive sea depth?
+
+No. Verified directly against the raw register (`EU_turbines_input_data.xlsx`): exactly 5,379
+rows are flagged `Offshore==1`, and the paper's Figure 3 breakdown (4,122 Monopile + 1,255
+Semi-submersible + 2 Spar buoy) sums to exactly 5,379 — no discrepancy. Cross-checked against
+the GEBCO-derived `geo_precomputed` files: all 5,379 offshore turbines have geo data, zero
+missing, so none were dropped for missing bathymetry either.
+
+One edge case, not a removal: 10 of the 5,379 offshore turbines have a GEBCO-derived sea depth
+that clamps to exactly 0 — their coordinates land on a GEBCO cell reading at-or-above sea level
+(likely coastline/grid-resolution imprecision for very near-shore turbines), rather than a
+genuine negative-elevation (underwater) reading. `precompute_geo_columns.py` clamps these to
+`sea_depth_m = 0.0` rather than dropping them, and `foundation_type()`'s `sea_depth <= 30 ->
+Monopile` rule folds them into the Monopile bucket, so they're part of the 4,122, not excluded.
 kg CO2-Eq/kWh. Unweighted mean (mean of the 38 countries' own means, each country counted once
 regardless of fleet size): 0.02101. The two are close, 1.8% apart, so Germany's size isn't
 distorting the picture much here; a country with a genuinely unusual GWP100 profile would show

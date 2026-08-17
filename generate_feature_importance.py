@@ -221,6 +221,12 @@ BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 GRAY, TEXT_SECONDARY = "#c7c6c0", "#52514e"
 CATEGORY_COLORS = {"onshore": BLUE, "offshore_monopile": ORANGE, "offshore_semi-submersible": AQUA}
 
+# "Headline" impact categories for fig_top_features_by_impact_grid.png -- a fixed spread across
+# what papers in this space usually lead with (a climate metric, a resource-depletion metric, two
+# human-health metrics, land, and water), not a data-driven selection.
+HEADLINE_IMPACTS = ["Climate change (total)", "Mineral resource use", "Human toxicity, carcinogenic",
+                     "Human toxicity, non-carc.", "Land use", "Water use"]
+
 
 def classify_category(filename: str) -> str:
     m = re.search(r"_offshore_(monopile|semi-submersible|spar)_lca_algebraic\.csv$", filename)
@@ -452,6 +458,19 @@ def plot_heatmap(matrices: dict[str, pd.DataFrame], modeled_categories: list[str
     return out_path
 
 
+def _rank_features_by_max_importance(perm_matrices: dict[str, pd.DataFrame],
+                                      modeled_categories: list[str]) -> list[str]:
+    """Every feature that appears in any modeled category, ranked DESCENDING by the largest
+    permutation importance it reaches for any impact category in any siting -- i.e. "how
+    important can this feature be, at its single best" rather than an average. Shared by
+    plot_max_importance_by_type (all features, ascending for barh) and the top-N feature grid
+    below (descending, then sliced)."""
+    all_features = sorted({f for cat in modeled_categories for f in perm_matrices[cat].index})
+    row_max = {f: max(perm_matrices[cat].loc[f].max() for cat in modeled_categories
+                       if f in perm_matrices[cat].index) for f in all_features}
+    return sorted(all_features, key=lambda f: row_max[f], reverse=True)
+
+
 def plot_max_importance_by_type(perm_matrices: dict[str, pd.DataFrame],
                                  modeled_categories: list[str], out_path: Path) -> Path:
     """One point per (feature, turbine category): that feature's LARGEST permutation importance
@@ -463,13 +482,9 @@ def plot_max_importance_by_type(perm_matrices: dict[str, pd.DataFrame],
 
     Only categories in `modeled_categories` are plotted (offshore spar has 2 turbines
     fleet-wide, below MIN_SAMPLES, and was never modeled)."""
-    all_features = sorted({f for cat in modeled_categories for f in perm_matrices[cat].index})
-    # Order rows by the largest max-importance any category reaches for that feature, so the
-    # most-influential features read at the top (barh/scatter convention already used elsewhere
-    # in this file).
-    row_max = {f: max(perm_matrices[cat].loc[f].max() for cat in modeled_categories
-                       if f in perm_matrices[cat].index) for f in all_features}
-    ordered_features = sorted(all_features, key=lambda f: row_max[f])
+    # Ascending so the most-influential features read at the top (barh/scatter convention
+    # already used elsewhere in this file).
+    ordered_features = _rank_features_by_max_importance(perm_matrices, modeled_categories)[::-1]
     y_pos = {f: i for i, f in enumerate(ordered_features)}
     # Small per-category vertical dodge so near-equal values across categories start out
     # separated -- adjust_text (below) still does the real collision avoidance, but a good
@@ -542,10 +557,74 @@ def plot_max_importance_by_type(perm_matrices: dict[str, pd.DataFrame],
     return out_path
 
 
+def plot_top_features_by_impact_grid(perm_matrices: dict[str, pd.DataFrame],
+                                      modeled_categories: list[str], features: list[str],
+                                      impact_labels: list[str], out_path: Path) -> Path:
+    """One subplot per feature (3x3 grid): x-axis = the given impact categories, y-axis =
+    permutation importance, grouped bars colored by turbine siting. Companion to
+    plot_max_importance_by_type -- that figure picks each feature's single best impact; this one
+    fixes a small set of impacts and shows every feature's importance across all of them side by
+    side, so a feature that's merely "pretty good" everywhere isn't hidden by one spike."""
+    n = len(features)
+    ncols = 3
+    nrows = -(-n // ncols)  # ceil
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.3 * ncols, 3.3 * nrows), squeeze=False)
+    axes = axes.flatten()
+
+    x = np.arange(len(impact_labels))
+    width = 0.8 / len(modeled_categories)
+    xticklabels = [IMPACT_ABBREV.get(lbl, lbl[:3]) for lbl in impact_labels]
+
+    for ax, f in zip(axes, features):
+        for i, cat in enumerate(modeled_categories):
+            mat = perm_matrices[cat]
+            if f not in mat.index:
+                continue  # e.g. sea depth has no onshore bar -- onshore's slot just stays empty
+            vals = mat.loc[f, impact_labels].values.astype(float)
+            offset = (i - (len(modeled_categories) - 1) / 2) * width
+            ax.bar(x + offset, vals, width=width * 0.9, color=CATEGORY_COLORS[cat],
+                   label=CATEGORY_TITLES[cat], zorder=3)
+        ax.set_title(FEATURE_LABELS[f], fontsize=10.5, color=TEXT_SECONDARY)
+        ax.set_xticks(x)
+        ax.set_xticklabels(xticklabels, fontsize=8)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.spines[["left", "bottom"]].set_color(GRAY)
+        ax.tick_params(colors=TEXT_SECONDARY, labelsize=8)
+        ax.grid(axis="y", color=GRAY, linewidth=0.6, alpha=0.5, zorder=0)
+        ax.set_axisbelow(True)
+
+    for ax in axes[n:]:
+        ax.axis("off")
+    for row in range(nrows):
+        axes[row * ncols].set_ylabel("Permutation\nimportance", fontsize=8.5)
+
+    # One legend for the whole grid, built from whichever subplots have categories present -- a
+    # subplot missing a category (e.g. sea depth, onshore) would otherwise give an incomplete
+    # legend if grabbed from the wrong axes.
+    handles_by_label: dict[str, object] = {}
+    for ax in axes[:n]:
+        for handle, label in zip(*ax.get_legend_handles_labels()):
+            handles_by_label[label] = handle
+    fig.suptitle("Top features' importance across headline impact categories, by siting",
+                 fontsize=13, fontweight="bold", x=0.02, ha="left")
+    fig.tight_layout(rect=(0, 0.09, 1, 0.95))
+    fig.legend(handles_by_label.values(), handles_by_label.keys(), loc="lower center",
+               ncol=len(modeled_categories), frameon=False, fontsize=9.5,
+               bbox_to_anchor=(0.5, 0.045))
+    key_line = "    ".join(f"{IMPACT_ABBREV.get(lbl, lbl[:3])} = {lbl}" for lbl in impact_labels)
+    fig.text(0.5, 0.01, key_line, ha="center", fontsize=8, color=TEXT_SECONDARY)
+
+    fig.savefig(out_path, dpi=170)
+    plt.close(fig)
+    print(f"Saved {out_path}")
+    return out_path
+
+
 def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict]],
                     r2_by_category: dict[str, list[float]], heatmap_path: Path,
                     grouped_heatmap_path: Path, cluster_members: dict[str, list[list[str]]],
-                    modeled_categories: list[str], max_importance_path: Path = None):
+                    modeled_categories: list[str], max_importance_path: Path = None,
+                    top_features_grid_path: Path = None):
     lines = []
     lines.append("# What actually drives per-turbine impacts, by category and siting")
     lines.append("")
@@ -671,6 +750,23 @@ def write_markdown(tables: dict[str, pd.DataFrame], summary: dict[str, list[dict
             left = f"{abbrev_items[i][1]} | {abbrev_items[i][0]}"
             right = f"{abbrev_items[i+1][1]} | {abbrev_items[i+1][0]}" if i + 1 < len(abbrev_items) else " | "
             lines.append(f"| {left} | {right} |")
+        lines.append("")
+
+    if top_features_grid_path is not None:
+        lines.append("## Summary: top 9 features across 6 headline impact categories, by siting")
+        lines.append("")
+        lines.append(f"![Top features across headline impact categories]({top_features_grid_path.relative_to(REPO)})")
+        lines.append("")
+        lines.append(
+            "The 9 features ranked highest by the single-best-impact figure above, now shown "
+            "across a fixed set of 6 \"headline\" impact categories (climate change, mineral "
+            "resource use, both human toxicity splits, land use, water use) instead of each "
+            "feature's one best impact -- so a feature that's consistently solid across several "
+            "impacts isn't indistinguishable from one that only spikes on a single narrow metric. "
+            "Bars are permutation importance (raw R² drop), grouped by turbine siting; a missing "
+            "bar means that feature doesn't apply to that siting (e.g. sea depth has no onshore "
+            "bar)."
+        )
         lines.append("")
 
     for category in CATEGORY_ORDER:
@@ -871,8 +967,13 @@ def main():
     max_importance_path = plot_max_importance_by_type(
         perm_matrices_raw, modeled_categories, OUT / "fig_max_importance_by_siting.png")
 
+    top9_features = _rank_features_by_max_importance(perm_matrices_raw, modeled_categories)[:9]
+    top_features_grid_path = plot_top_features_by_impact_grid(
+        perm_matrices_raw, modeled_categories, top9_features, HEADLINE_IMPACTS,
+        OUT / "fig_top_features_by_impact_grid.png")
+
     write_markdown(tables, summary, r2_by_category, heatmap_path, grouped_heatmap_path,
-                    cluster_members, modeled_categories, max_importance_path)
+                    cluster_members, modeled_categories, max_importance_path, top_features_grid_path)
 
 
 if __name__ == "__main__":

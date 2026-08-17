@@ -22,17 +22,30 @@ bd.projects.set_current('wimby')
 eu_wind_turbines = pd.read_excel(_DATA_DIR / "EU_turbines_input_data.xlsx", sheet_name="EU_turbines_input_data")
 print(f"Total turbines before filtering: {eu_wind_turbines.shape[0]}")
 
-selected_countries = ['NO', 'DE', 'GB', 'DK', 'BE']
+selected_countries = ['BY', 'CY', 'FO', 'IS', 'XK']
 
 # Per-country sample sizes for the 21 Jul 2026 multi-country confirmation batch, chosen to
 # total ~148 turbines across NO/DE/GB (covers onshore + all 3 offshore foundation buckets:
 # Monopile, Semi-submersible, Spar buoy) before rolling lca_algebraic out to all remaining
 # countries without a per-country baseline run. Falls back to the historical default
 # (50 onshore / 20 per offshore bucket) for any country not listed here.
+#
+# 15 Aug 2026 second validation batch: BY/CY/FO/IS/XK were 5 of the 33 countries rolled out
+# with algebraic-only (no baseline) plausibility checks. They're also exactly the 5 countries
+# with no buses.csv coverage at all (see NEXT_STEPS_lca_algebraic.md item 12) — the same root
+# cause that caused a 20-60% abs-max error in DE/GB/BE before it was caught, so they're the
+# highest-risk of the 33 to leave unvalidated. All 5 are small (12/57/19/2/9 onshore turbines,
+# 0 offshore) so onshore_n is set to each country's full count rather than the 50-turbine
+# default, giving 100% baseline coverage instead of a sample.
 SAMPLE_CONFIG = {
     'NO': {'onshore_n': 30, 'offshore_per_bucket': 20},  # only source of Spar buoy (2) + 1 Semi-sub
     'DE': {'onshore_n': 30, 'offshore_per_bucket': 20},  # largest single fleet (36% of EU register)
     'GB': {'onshore_n': 15, 'offshore_per_bucket': 15},  # 2nd-largest offshore fleet, distinct background
+    'BY': {'onshore_n': 12, 'offshore_per_bucket': 20},
+    'CY': {'onshore_n': 57, 'offshore_per_bucket': 20},
+    'FO': {'onshore_n': 19, 'offshore_per_bucket': 20},
+    'IS': {'onshore_n': 2, 'offshore_per_bucket': 20},
+    'XK': {'onshore_n': 9, 'offshore_per_bucket': 20},
 }
 DEFAULT_SAMPLE = {'onshore_n': 50, 'offshore_per_bucket': 20}
 
@@ -238,6 +251,10 @@ for country in selected_countries:
     offshore_all = eu_wind_turbines[
         (eu_wind_turbines['ISO_code'] == country) & (eu_wind_turbines['Offshore'] == 1)
     ].copy()
+    if len(offshore_all) == 0:
+        print(f"\n{country} has no offshore turbines, skipping offshore run.")
+        continue
+
     offshore_all['bucket'] = geo.loc[offshore_all.index, 'sea_depth_m'].apply(
         lambda sd: foundation_type(True, sd))
     print(f"\n{country} offshore fleet: {len(offshore_all)} turbines, bucket distribution:")
