@@ -20,6 +20,10 @@ env/
 # Ecoinvent raw dataset files — 21 000+ spold files, too large for git
 REWIND/REWIND/data/datasets/
 
+# Turbine register — licensed data, cannot be redistributed (was accidentally committed and
+# scrubbed from history on 2026-08-20; ignored anywhere in the repo, not just its usual path)
+EU_turbines_input_data.xlsx
+
 # Large geographic/climate data files
 *.nc
 *.7z

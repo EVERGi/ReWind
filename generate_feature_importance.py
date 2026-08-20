@@ -198,15 +198,15 @@ IMPACT_ABBREV = {
     "Eutrophication, freshwater": "EPf",
     "Eutrophication, marine": "EPm",
     "Eutrophication, terrestrial": "EPt",
-    "Human toxicity, carcinogenic": "HTc",
-    "Human toxicity, carc. (inorg.)": "HTci",
-    "Human toxicity, carc. (org.)": "HTco",
-    "Human toxicity, non-carc.": "HTnc",
-    "Human toxicity, non-carc. (inorg.)": "HTnci",
-    "Human toxicity, non-carc. (org.)": "HTnco",
-    "Ionising radiation": "IRP",
+    "Human toxicity, carcinogenic": "HTC",
+    "Human toxicity, carc. (inorg.)": "HTCi",
+    "Human toxicity, carc. (org.)": "HTCo",
+    "Human toxicity, non-carc.": "HTN",
+    "Human toxicity, non-carc. (inorg.)": "HTNi",
+    "Human toxicity, non-carc. (org.)": "HTNo",
+    "Ionising radiation": "IR",
     "Land use": "LU",
-    "Mineral resource use": "ADP",
+    "Mineral resource use": "MRM",
     "Ozone depletion": "ODP",
     "Particulate matter": "PM",
     "Photochemical ozone formation": "POF",
@@ -225,7 +225,24 @@ CATEGORY_COLORS = {"onshore": BLUE, "offshore_monopile": ORANGE, "offshore_semi-
 # what papers in this space usually lead with (a climate metric, a resource-depletion metric, two
 # human-health metrics, land, and water), not a data-driven selection.
 HEADLINE_IMPACTS = ["Climate change (total)", "Mineral resource use", "Human toxicity, carcinogenic",
-                     "Human toxicity, non-carc.", "Land use", "Water use"]
+                     "Human toxicity, non-carc.", "Land use", "Ionising radiation"]
+
+# Manual row groups for fig_top_features_by_impact_grid.png -- puts related features on the same
+# row (turbine size/mass, then transport/logistics, then site/foundation) so a reader scanning
+# the grid sees like features side by side instead of raw importance-rank order.
+GRID_ROW_GROUPS = [
+    ["Hub_height_m", "Diameter_m", "Blade_mass_kg"],
+    ["dist_nacelle_m", "dist_tower_m", "dist_to_grid_m"],
+    ["sea_depth_m", "Foundation_mass_kg", "park_size"],
+]
+
+
+def _order_features_by_group(features: list[str]) -> list[str]:
+    """Reorders `features` into GRID_ROW_GROUPS's row-by-row layout. Any feature not covered by
+    the groups is appended at the end, so this stays safe if the top-N feature set ever changes."""
+    grouped = [f for row in GRID_ROW_GROUPS for f in row if f in features]
+    leftover = [f for f in features if f not in grouped]
+    return grouped + leftover
 
 
 def classify_category(filename: str) -> str:
@@ -568,12 +585,20 @@ def plot_top_features_by_impact_grid(perm_matrices: dict[str, pd.DataFrame],
     n = len(features)
     ncols = 3
     nrows = -(-n // ncols)  # ceil
-    fig, axes = plt.subplots(nrows, ncols, figsize=(4.3 * ncols, 3.3 * nrows), squeeze=False)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.6 * ncols, 3.5 * nrows), squeeze=False)
     axes = axes.flatten()
 
     x = np.arange(len(impact_labels))
     width = 0.8 / len(modeled_categories)
     xticklabels = [IMPACT_ABBREV.get(lbl, lbl[:3]) for lbl in impact_labels]
+
+    # One shared y-axis ceiling across every panel -- with each subplot free-scaling on its own,
+    # a feature that barely matters anywhere (max ~0.02) fills its panel just as much as one that
+    # dominates (max ~1.3), so a reader's first glance overstates how much is going on. Pinning
+    # all panels to the same ceiling means panel "fullness" is directly comparable at a glance.
+    all_vals = [perm_matrices[cat].loc[f, impact_labels].values.astype(float)
+                for cat in modeled_categories for f in features if f in perm_matrices[cat].index]
+    ymax = float(np.concatenate(all_vals).max()) * 1.08 if all_vals else 1.0
 
     for ax, f in zip(axes, features):
         for i, cat in enumerate(modeled_categories):
@@ -584,19 +609,20 @@ def plot_top_features_by_impact_grid(perm_matrices: dict[str, pd.DataFrame],
             offset = (i - (len(modeled_categories) - 1) / 2) * width
             ax.bar(x + offset, vals, width=width * 0.9, color=CATEGORY_COLORS[cat],
                    label=CATEGORY_TITLES[cat], zorder=3)
-        ax.set_title(FEATURE_LABELS[f], fontsize=10.5, color=TEXT_SECONDARY)
+        ax.set_title(FEATURE_LABELS[f], fontsize=12, color=TEXT_SECONDARY)
         ax.set_xticks(x)
-        ax.set_xticklabels(xticklabels, fontsize=8)
+        ax.set_xticklabels(xticklabels, fontsize=10.5)
+        ax.set_ylim(0, ymax)
         ax.spines[["top", "right"]].set_visible(False)
         ax.spines[["left", "bottom"]].set_color(GRAY)
-        ax.tick_params(colors=TEXT_SECONDARY, labelsize=8)
+        ax.tick_params(colors=TEXT_SECONDARY, labelsize=10)
         ax.grid(axis="y", color=GRAY, linewidth=0.6, alpha=0.5, zorder=0)
         ax.set_axisbelow(True)
 
     for ax in axes[n:]:
         ax.axis("off")
     for row in range(nrows):
-        axes[row * ncols].set_ylabel("Permutation\nimportance", fontsize=8.5)
+        axes[row * ncols].set_ylabel("Permutation\nimportance", fontsize=10)
 
     # One legend for the whole grid, built from whichever subplots have categories present -- a
     # subplot missing a category (e.g. sea depth, onshore) would otherwise give an incomplete
@@ -967,7 +993,8 @@ def main():
     max_importance_path = plot_max_importance_by_type(
         perm_matrices_raw, modeled_categories, OUT / "fig_max_importance_by_siting.png")
 
-    top9_features = _rank_features_by_max_importance(perm_matrices_raw, modeled_categories)[:9]
+    top9_features = _order_features_by_group(
+        _rank_features_by_max_importance(perm_matrices_raw, modeled_categories)[:9])
     top_features_grid_path = plot_top_features_by_impact_grid(
         perm_matrices_raw, modeled_categories, top9_features, HEADLINE_IMPACTS,
         OUT / "fig_top_features_by_impact_grid.png")
