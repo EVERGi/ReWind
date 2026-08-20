@@ -1,4 +1,3 @@
-print(">>> USING THIS FILE <<<")
 import time
 from pathlib import Path
 from logging import getLogger

@@ -1,0 +1,13 @@
+numpy==2.5.1
+pandas==2.3.3
+scipy==1.18.0
+scikit-learn==1.9.0
+matplotlib==3.11.0
+adjustText==1.4.0
+sympy==1.14.0
+geopandas==1.1.4
+pyogrio==0.13.0
+bw2data==4.7
+bw2calc==2.5.0
+bw2io==0.9.17
+lca_algebraic==1.4.1

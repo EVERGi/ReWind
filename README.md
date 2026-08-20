@@ -1,112 +1,105 @@
 # ReWind
-Regionalized cradle-to-grave life cycle assessment (LCA) model for on- and offshore wind energy in Europe.
 
-## Overview
+Regionalized, cradle-to-grave life cycle assessment (LCA) model for onshore and offshore
+wind turbines in Europe. ReWind combines turbine-specific technical parameters with
+geographically resolved inventory data (grid connection distance, transport distance,
+sea depth, foundation type) to estimate environmental impacts for individual turbines
+and for the full European fleet.
 
-`ReWind` is a Python package and set of scripts to perform regionalized cradle-to-grave life cycle assessments for onshore and offshore wind projects in Europe. The code assembles component inventories, applies region-specific scaling and calculation methods, and produces impact estimates suitable for comparative analysis and research.
+This repository supports the paper *Integrating geographic data into life cycle
+assessment: a spatial analysis of European wind turbines* (Huber et al.).
 
-Key features
-- Integrated modelling of onshore and offshore wind energy systems
-- Explicit representation of offshore foundation types, including floating systems
-- Spatially resolved life cycle inventory (LCI) modelling
-- Scalable workflows for large turbine fleets
-- Reproducible and script-based analysis pipeline
+## Requirements
+
+- Python 3.10 or later
+- GDAL and PROJ (system libraries required by geopandas)
+- A Brightway2 project with the ecoinvent database imported (see "Data you need to
+  provide" below)
 
 ## Installation
 
-Prerequisites
-- Python 3.8+ (recommend 3.10 or later)
-- System libraries for geospatial Python packages (GDAL, PROJ)
-
-Typical installation (editable install for development):
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -e .
+```bash
+python3 -m venv rewind_env
+source rewind_env/bin/activate
+pip install -r requirements.txt
 ```
 
-If the project provides a `requirements.txt` or uses `pyproject.toml`, install dependencies accordingly (for example `pip install -r requirements.txt` or `pip install .`). Installing `geopandas` and related packages may require system dependencies on Windows (GDAL/PROJ); consult your package manager or conda for an easier install (`conda install geopandas gdal rasterio`).
+`geopandas` depends on GDAL and PROJ. If `pip install` fails to build them, install
+`geopandas` and `pyogrio` through your system package manager or conda first
+(`conda install geopandas`), then `pip install` the rest.
 
-## How to Run
+## Data you need to provide
 
-The repository includes `example.py` which demonstrates a minimal run. The simplest way to get started is:
+None of the following are included in this repository. Two are licensed and cannot be
+redistributed; the other two are free but too large to bundle.
 
-```powershell
-# Activate environment
-.\.venv\Scripts\activate
+| File | Why it's not here | Where to get it |
+|---|---|---|
+| `REWIND/REWIND/data/EU_turbines_input_data.xlsx` | Licensed turbine register | Contact the data provider |
+| `REWIND/REWIND/data/datasets/` | ecoinvent 3.9.1, licensed | [ecoinvent.org](https://ecoinvent.org) |
+| `Shared_Rewind/wind_fleet_data_incl_sea_depths_corrected.csv` | Large derived file | Provided with the Zenodo release |
+| `Shared_Rewind/Fleet_results/NUTS_RG_20M_2024_4326.gpkg` | Large, freely available | [Eurostat GISCO](https://ec.europa.eu/eurostat/web/gisco/geodata/statistical-units/territorial-units-statistics) |
 
-# Run the example script
-python example.py
+GEBCO bathymetry is not needed to run the scripts: sea depth is already computed and
+stored in `REWIND/REWIND/data/geo_precomputed/`.
+
+## Running the pipeline
+
+`regenerate_all.sh` runs the full analysis, from turbine-level LCA results through
+every figure and summary table used in the paper. Run it from the repository root with
+the environment above active:
+
+```bash
+./regenerate_all.sh
 ```
 
-For custom runs, inspect and adapt `example.py` or import the package in your own scripts. The main package code is in the `REWIND` package directory.
+This takes the licensed turbine register and ecoinvent database as input and produces:
+fleet-level impact results per country and siting type, permutation feature importance,
+material importance and contribution analysis, summary statistics (variability,
+extreme-turbine analysis, validation against ecoinvent), and every figure in the paper.
 
-## Data Requirements
+If you already have `REWIND/REWIND/data/results/` populated (for example, from the
+Zenodo release) and only want to regenerate figures and statistics, skip the slow LCA
+step:
 
-Place required data files under `REWIND/data/` or provide a path to your data when calling the scripts. Required items typically include:
-- `buses.csv` (grid / region mapping)
-- Shapefiles for country/region boundaries (all shapefile components: `.shp`, `.shx`, `.dbf`, etc.)
-- Any inventory CSVs or lookup tables used by `prepare_inventories.py` and `built_inventory.py`
+```bash
+./regenerate_all.sh --skip-lca
+```
 
-Notes
-- Shapefiles must be complete (all component files present) and encoded in a common CRS (WGS84 recommended).
-- Large datasets (GIS, country-level inventories) can be heavy; ensure sufficient disk space and memory.
-- Check data licenses before redistribution; some sources in `REWIND/data/` may have restrictions.
+The script checks for required input files before running and stops with a clear
+message if something is missing, rather than failing partway through.
 
-## Not included in this repository
+## Repository layout
 
-- ecoinvent database, cut-off version 3.9.1 (licensed)
-- GEBCO bathymetry (can be downloaded separately via: **GEBCO global bathymetry dataset (2024)**  
-  https://www.gebco.net/data_and_products/gridded_bathymetry_data/, File used: `GEBCO_2024_sub_ice_topo.nc`)
+- `REWIND/REWIND/` — core LCA package: inventory construction, scaling formulas, and
+  the local (gitignored) data directory
+- `Shared_Rewind/` — external supporting data (gitignored, see table above)
+- `figures/` — all generated figures, organized by analysis
+- `*.md` — methodology notes for specific analyses (feature importance, material
+  contribution, structural dependencies, summary statistics)
+- `regenerate_all.sh` — runs the full pipeline end to end
 
 ## Reproducibility
 
-Due to licensing restrictions (e.g. ecoinvent) and the size of certain external datasets (e.g. bathymetry data), full reproduction of the European fleet assessment is not possible using this repository alone. 
+Full reproduction of the European fleet assessment requires the licensed ecoinvent
+database and turbine register, so it is not possible from this repository alone. Once
+those inputs are in place, `regenerate_all.sh` reproduces every result and figure in
+the paper. The Zenodo archive (below) provides the processed fleet-level results, so
+published numbers can be checked without needing licensed access to the raw inputs.
 
-However, once the required external inputs (namely the ecoinvent database and the GEBCO bathymetry dataset) are provided in the `REWIND/data/` directory (or the corresponding input paths defined in the scripts), the model can be fully executed using the supplied scripts. The included example workflow enables users to run the model on a reduced dataset and verify the implementation and calculation logic. 
+## Data availability
 
-In addition, the Zenodo archive provides the processed fleet-level datasets used in this study, allowing validation of the reported results and facilitating direct comparison with published values.
-
-
-## Example Workflow
-
-1. Create and activate a Python virtual environment.
-2. Install the package and dependencies (see Installation).
-3. Place the required input data in `REWIND/data/` or update paths in `example.py`.
-4. Run the example script:
-
-```powershell
-python example.py
-```
-
-5. Inspect outputs (console, CSVs or output folder used by the script). Adapt parameters and rerun for other regions or scenarios.
-
-## Limitations (VERY IMPORTANT)
-
-- Geographic scope: The model and bundled data are configured for Europe; applying them outside Europe may produce invalid results.
-- Spatial resolution: Many regionalizations use coarse mappings and assumptions; results are intended for comparative research, not detailed site-level engineering.
-- Inventory completeness: Some component inventories use proxies or literature averages where itemized, measured data are not available.
-- Validation: The model has been validated on a country-level accross Europe. Results are provided in the paper.
-- External dependencies: Geospatial packages (e.g. `geopandas`, `rasterio`) may require system-level libraries which are outside of Python's control.
-- Data licensing: Some input datasets may be proprietary or have redistribution limits; verify each dataset's license before sharing derived outputs.
-
-## Data Availability
-The scripts used to analyse the data, along with the resulting datasets, are available on Zenodo:
-	DOI: 10.5281/zenodo.17857554
-
+Processed results and analysis outputs are archived on Zenodo:
+DOI: [10.5281/zenodo.17857554](https://doi.org/10.5281/zenodo.17857554)
 
 ## Citation
-
-Please cite the project and any associated Zenodo record.
 
 ```bibtex
 @misc{ReWind2026,
   author       = {Huber, Dominik},
   title        = {Climate change impacts and annual electricity
                    production of all wind turbines installed in
-                   Europe until 2020
-                  },
+                   Europe until 2020},
   month        = dec,
   year         = 2025,
   publisher    = {Zenodo},
@@ -115,10 +108,11 @@ Please cite the project and any associated Zenodo record.
   url          = {https://doi.org/10.5281/zenodo.17857554},
 }
 ```
-## Associated Publication
 
-Huber et al. (2026). [Integrating geographic data into greenhouse gas emission footprinting: a spatial analysis of European wind turbines]. *International Journal of Life Cycle Assessment*.
+Associated publication: Huber et al. (2026). *Integrating geographic data into life
+cycle assessment: a spatial analysis of European wind turbines*. International Journal
+of Life Cycle Assessment.
 
 ## License
 
-This project is distributed under the BSD 3-Clause License. See the `LICENSE` file for full terms.
+BSD 3-Clause License. See `LICENSE` for full terms.
