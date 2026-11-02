@@ -10,4 +10,5 @@ pyogrio==0.13.0
 bw2data==4.7
 bw2calc==2.5.0
 bw2io==0.9.17
-lca_algebraic==1.4.1
+lca_algebraic_bw25==1.4.1
+brightway25==1.1.1

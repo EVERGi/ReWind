@@ -1,0 +1,51 @@
+method,abbr,scenario,by_turbine_within_25pct,by_production_within_25pct,by_turbine_within_50pct,by_production_within_50pct
+acidification - accumulated exceedance (AE)[mol H+-Eq],,all,61.63219517227151,55.15592123912788,84.89271714462554,86.436570664818
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,all,60.916546317309674,54.567993137785756,81.44857643903445,79.15506243485328
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,all,58.55297090984114,54.68351452923128,84.06746441097586,82.64474305298315
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,all,60.826284299566744,54.46539109022511,81.39184031359605,79.13917694322025
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,all,76.2649577057974,76.75688138556447,89.81844439859708,93.52465435039294
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,all,61.371724778213334,52.936501565169124,84.52006395708686,84.5264841228901
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,60.73860119661646,52.447614636749385,84.47622240561172,83.77829996883233
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,65.90029915411594,59.33383546878504,83.85212502578915,84.65433881270265
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,all,63.61409119042707,57.99641889991131,82.32282855374459,81.89512384691827
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,all,55.407984320198054,48.90541269230145,81.17907984320199,77.19283101497396
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,all,63.28785846915618,57.27589135232312,82.55106251289457,81.94160189882948
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,all,63.00804621415308,56.9206721292668,82.4027749123169,82.3935153865803
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,all,69.80864452238498,64.1791843374595,85.8340210439447,84.99232761079188
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,71.95559108727048,66.39226641294891,88.16664947390139,87.96603642511504
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,49.5048483598102,45.72971108921928,75.70275428099855,73.86294056960998
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,all,57.619403754899935,54.616163446482915,85.2034763771405,84.90372679372923
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,57.797348875593144,55.14648345306414,85.26279141737157,84.973224396074
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,52.807148751805244,49.566295843981166,82.81669073653806,81.5203821059245
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,all,56.1893955023726,52.2877414547591,80.01212089952548,81.03272548428917
+land use - soil quality index[dimensionless],LU,all,73.67701671136786,74.42050017885009,90.39998968434084,94.3786269494965
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,all,52.75170208376315,49.88498085710485,83.33247369506913,81.65906880684147
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,all,59.49943263874562,53.8132230517659,82.02754280998555,80.25862866363694
+particulate matter formation - impact on human health[disease incidence],,all,65.09567773880751,60.08406973720263,84.11646379203631,82.49904602425417
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,all,64.88936455539509,58.76818560447109,82.74448112234371,81.48603262724532
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,all,65.95574582215804,60.86333289167476,84.8437177635651,84.96214996631205
+acidification - accumulated exceedance (AE)[mol H+-Eq],,excl_le50kW,62.444412566346294,55.15692699759512,85.6365983750864,86.44253523249675
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,excl_le50kW,61.528931547580235,54.57191532752111,82.1663775902766,79.16069697060573
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,59.64710945345001,54.687334719860026,84.88282625422204,82.6503543309899
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,61.43634016249136,54.46930567294167,82.09204366140244,79.14481030120639
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,77.09993349069522,76.76225165361845,90.78780923566464,93.53082800228776
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,excl_le50kW,61.98145564090191,52.94770469029089,85.23232613033215,84.51391211414459
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,61.405041666123296,52.45746543073385,85.19189890585673,83.78344564712012
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,66.49756784601139,59.340280602047514,84.59853157887873,84.65719556280318
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,excl_le50kW,64.246684315541,57.995607949595666,83.08316271305799,81.89915461630105
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,excl_le50kW,56.067343931351964,48.909111497556175,81.86121725068791,77.19007463444102
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,excl_le50kW,63.92848293579896,57.28009194623404,83.26964958725108,81.94748516655066
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,excl_le50kW,63.64549236447099,56.92598928365105,83.07664219298131,82.39168729598092
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,excl_le50kW,70.55854774976852,64.18389674844113,86.72813343592284,84.99850549122178
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,72.73640145538009,66.39714290405686,89.05465499928275,87.97070167305235
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,50.28885903939698,45.73137441393763,76.19879761609786,73.86837094399819
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,excl_le50kW,58.24128532491751,54.62117447583284,85.9495833387671,84.90762760541335
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,58.41864347100325,55.150362302538454,85.98479414718118,84.97901571917292
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,53.38088965975927,49.563640923285874,83.56828940676309,81.52565436725656
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,excl_le50kW,57.11193124763631,52.29161812039145,80.70838930113065,81.03870344672707
+land use - soil quality index[dimensionless],LU,excl_le50kW,74.46564337971596,74.42532585162377,91.25728668118569,94.38367007173562
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,excl_le50kW,53.421316884234685,49.89054931649136,84.11601309320432,81.66507469073221
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,excl_le50kW,60.20004955595258,53.821958695035526,82.66063301208905,80.26214674192585
+particulate matter formation - impact on human health[disease incidence],,excl_le50kW,65.7672695974231,60.0832343603312,84.84631134179263,82.50447060984793
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,excl_le50kW,65.58339093126068,58.77007455484514,83.5226457662263,81.47634381549106
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,excl_le50kW,66.62797824754503,60.86461775878812,85.69528305577653,84.96734475981975

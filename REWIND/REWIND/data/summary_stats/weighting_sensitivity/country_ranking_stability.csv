@@ -1,0 +1,151 @@
+method,abbr,scenario,weighting,spearman_vs_unweighted_all
+acidification - accumulated exceedance (AE)[mol H+-Eq],,all,unweighted,1.0
+acidification - accumulated exceedance (AE)[mol H+-Eq],,all,production_weighted,0.8929861035124192
+acidification - accumulated exceedance (AE)[mol H+-Eq],,all,capacity_weighted,0.9109311740890687
+acidification - accumulated exceedance (AE)[mol H+-Eq],,excl_le50kW,unweighted,0.8982383192909508
+acidification - accumulated exceedance (AE)[mol H+-Eq],,excl_le50kW,production_weighted,0.8866396761133604
+acidification - accumulated exceedance (AE)[mol H+-Eq],,excl_le50kW,capacity_weighted,0.8986760039391618
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,all,unweighted,1.0
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,all,production_weighted,0.8616916511653352
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,all,capacity_weighted,0.8667250246197614
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,excl_le50kW,unweighted,0.8770106138527192
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,excl_le50kW,production_weighted,0.8544698544698545
+climate change - global warming potential (GWP100)[kg CO2-Eq],CC,excl_le50kW,capacity_weighted,0.8667250246197614
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,all,unweighted,1.0
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,all,production_weighted,0.8868585184374658
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,all,capacity_weighted,0.9118065433854907
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,unweighted,0.9048035890141154
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,production_weighted,0.8805120910384068
+climate change: biogenic - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,capacity_weighted,0.9063354852828537
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,all,unweighted,1.0
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,all,production_weighted,0.8614728088412299
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,all,capacity_weighted,0.866506182295656
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,unweighted,0.8770106138527192
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,production_weighted,0.854251012145749
+climate change: fossil - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,capacity_weighted,0.866506182295656
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,all,unweighted,1.0
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,all,production_weighted,0.8630047051099682
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,all,capacity_weighted,0.8912353649195754
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,unweighted,0.8982383192909508
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,production_weighted,0.8630047051099682
+climate change: land use and land use change - global warming potential (GWP100)[kg CO2-Eq],,excl_le50kW,capacity_weighted,0.8846700951964108
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,all,unweighted,1.0
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,all,production_weighted,0.9028340080971659
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,all,capacity_weighted,0.908742750848014
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,excl_le50kW,unweighted,0.8980194769668455
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,excl_le50kW,production_weighted,0.890141153299048
+ecotoxicity: freshwater - comparative toxic unit for ecosystems (CTUe)[CTUe],,excl_le50kW,capacity_weighted,0.8962687383740015
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,unweighted,1.0
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,production_weighted,0.9008644271802166
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,capacity_weighted,0.9098369624685414
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,unweighted,0.8982383192909508
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,production_weighted,0.9008644271802166
+"ecotoxicity: freshwater, inorganics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,capacity_weighted,0.9039282197176933
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,unweighted,1.0
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,production_weighted,0.8658496553233395
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,all,capacity_weighted,0.872414925046504
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,unweighted,0.8772294561768246
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,production_weighted,0.8658496553233395
+"ecotoxicity: freshwater, organics - comparative toxic unit for ecosystems (CTUe)[CTUe]",,excl_le50kW,capacity_weighted,0.872414925046504
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,all,unweighted,1.0
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,all,production_weighted,0.8656308129992342
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,all,capacity_weighted,0.8689134478608164
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,excl_le50kW,unweighted,0.8844512528723055
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,excl_le50kW,production_weighted,0.8656308129992342
+"energy resources: non-renewable - abiotic depletion potential (ADP): fossil fuels[MJ, net calorific value]",,excl_le50kW,capacity_weighted,0.8689134478608164
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,all,unweighted,1.0
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,all,production_weighted,0.926906663748769
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,all,capacity_weighted,0.9371922529817267
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,excl_le50kW,unweighted,0.9172776014881278
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,excl_le50kW,production_weighted,0.9216544479702374
+eutrophication: freshwater - fraction of nutrients reaching freshwater end compartment (P)[kg P-Eq],,excl_le50kW,capacity_weighted,0.931940037203195
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,all,unweighted,1.0
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,all,production_weighted,0.8721960827223986
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,all,capacity_weighted,0.8759164022321917
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,excl_le50kW,unweighted,0.8772294561768246
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,excl_le50kW,production_weighted,0.8721960827223986
+eutrophication: marine - fraction of nutrients reaching marine end compartment (N)[kg N-Eq],,excl_le50kW,capacity_weighted,0.8759164022321917
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,all,unweighted,1.0
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,all,production_weighted,0.8796367217419849
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,all,capacity_weighted,0.8811686180107233
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,excl_le50kW,unweighted,0.8844512528723055
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,excl_le50kW,production_weighted,0.8796367217419849
+eutrophication: terrestrial - accumulated exceedance (AE)[mol N-Eq],,excl_le50kW,capacity_weighted,0.8811686180107233
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,all,unweighted,1.0
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,all,production_weighted,0.8479045847466901
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,all,capacity_weighted,0.8754787175839808
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,excl_le50kW,unweighted,0.8772294561768246
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,excl_le50kW,production_weighted,0.8479045847466901
+human toxicity: carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTC,excl_le50kW,capacity_weighted,0.8682569208884998
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,unweighted,1.0
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,production_weighted,0.84112047269942
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,capacity_weighted,0.8612539665171244
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,unweighted,0.8914542072436809
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,production_weighted,0.8338986760039392
+"human toxicity: carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,capacity_weighted,0.854251012145749
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,unweighted,1.0
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,production_weighted,0.8704453441295545
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,capacity_weighted,0.8706641864536601
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,unweighted,0.8621293358135463
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,production_weighted,0.8704453441295545
+"human toxicity: carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,capacity_weighted,0.8706641864536601
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,all,unweighted,1.0
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,all,production_weighted,0.9312835102308786
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,all,capacity_weighted,0.9546996389101653
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,excl_le50kW,unweighted,0.9584199584199584
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,excl_le50kW,production_weighted,0.9312835102308786
+human toxicity: non-carcinogenic - comparative toxic unit for human (CTUh)[CTUh],HTN,excl_le50kW,capacity_weighted,0.9507604770762664
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,unweighted,1.0
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,production_weighted,0.9330342488237224
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,all,capacity_weighted,0.9555750082065871
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,unweighted,0.9584199584199584
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,production_weighted,0.9330342488237224
+"human toxicity: non-carcinogenic, inorganics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,capacity_weighted,0.951417004048583
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,unweighted,1.0
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,production_weighted,0.9739577634314477
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,all,capacity_weighted,0.9829302987197724
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,unweighted,0.9901520954152532
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,production_weighted,0.9739577634314477
+"human toxicity: non-carcinogenic, organics - comparative toxic unit for human (CTUh)[CTUh]",,excl_le50kW,capacity_weighted,0.9829302987197724
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,all,unweighted,1.0
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,all,production_weighted,0.9275631907210855
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,all,capacity_weighted,0.9321588795273006
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,excl_le50kW,unweighted,0.9172776014881278
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,excl_le50kW,production_weighted,0.9220921326184484
+ionising radiation: human health - human exposure efficiency relative to u235[kBq U235-Eq],IR,excl_le50kW,capacity_weighted,0.9275631907210855
+land use - soil quality index[dimensionless],LU,all,unweighted,1.0
+land use - soil quality index[dimensionless],LU,all,production_weighted,0.8096071780282307
+land use - soil quality index[dimensionless],LU,all,capacity_weighted,0.890578837947259
+land use - soil quality index[dimensionless],LU,excl_le50kW,unweighted,0.9582011160958528
+land use - soil quality index[dimensionless],LU,excl_le50kW,production_weighted,0.8096071780282307
+land use - soil quality index[dimensionless],LU,excl_le50kW,capacity_weighted,0.8798555640660902
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,all,unweighted,1.0
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,all,production_weighted,0.9652040704672283
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,all,capacity_weighted,0.9735200787832368
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,excl_le50kW,unweighted,0.9829302987197724
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,excl_le50kW,production_weighted,0.9621402779297515
+material resources: metals/minerals - abiotic depletion potential (ADP): elements (ultimate reserves)[kg Sb-Eq],MRM,excl_le50kW,capacity_weighted,0.9706751285698655
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,all,unweighted,1.0
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,all,production_weighted,0.8660684976474451
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,all,capacity_weighted,0.8695699748331327
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,excl_le50kW,unweighted,0.8844512528723055
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,excl_le50kW,production_weighted,0.8660684976474451
+ozone depletion - ozone depletion potential (ODP)[kg CFC-11-Eq],,excl_le50kW,capacity_weighted,0.8695699748331327
+particulate matter formation - impact on human health[disease incidence],,all,unweighted,1.0
+particulate matter formation - impact on human health[disease incidence],,all,production_weighted,0.8544698544698545
+particulate matter formation - impact on human health[disease incidence],,all,capacity_weighted,0.8540321698216435
+particulate matter formation - impact on human health[disease incidence],,excl_le50kW,unweighted,0.8621293358135463
+particulate matter formation - impact on human health[disease incidence],,excl_le50kW,production_weighted,0.847029215450268
+particulate matter formation - impact on human health[disease incidence],,excl_le50kW,capacity_weighted,0.8540321698216435
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,all,unweighted,1.0
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,all,production_weighted,0.8697888171572382
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,all,capacity_weighted,0.8735091366670313
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,excl_le50kW,unweighted,0.8772294561768246
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,excl_le50kW,production_weighted,0.8551263814421708
+photochemical oxidant formation: human health - tropospheric ozone concentration increase[kg NMVOC-Eq],,excl_le50kW,capacity_weighted,0.8735091366670313
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,all,unweighted,1.0
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,all,production_weighted,0.8540321698216435
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,all,capacity_weighted,0.8743845059634533
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,excl_le50kW,unweighted,0.8772294561768246
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,excl_le50kW,production_weighted,0.8540321698216435
+water use - user deprivation potential (deprivation-weighted water consumption)[m3 world eq. deprived],,excl_le50kW,capacity_weighted,0.8671627092679723
