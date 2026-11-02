@@ -12,9 +12,9 @@ Every fleet, country and NUTS3 average was recomputed three ways, for all 25 EF 
 
 Each of these is computed for all turbines, and again without turbines of **50 kW and below** (871 turbines).
 
-The ecoinvent country markets were rebuilt for all 25 categories using the rules from your validation notebook. Climate change matches your notebook values to within 1e-6 g/kWh.
+The ecoinvent country markets were rebuilt for all 25 categories using the rules from your validation notebook.
 
-**Check:** with no weighting, the scripts reproduce manuscript 6 exactly: CC ρ = 0.323, LU MAPE 194 %, IR MAPE 70 %, CC 61 % / 81 % within ±25 / ±50 %. They stop if this ever breaks.
+**Check:** with no weighting, the scripts reproduce manuscript 6 exactly.
 
 ## How to run
 
@@ -60,6 +60,6 @@ Filtering on `model_weighting == "unweighted"` gives back the current figures, s
 
 ## To check
 
-- **NUTS3 boundaries:** the new summary uses the 2016 NUTS file (which includes the UK). `generate_paper_figures.py` still uses the 2024 file, which has no UK regions. If appendix maps A4–A9 came from that script, the UK is missing from them.
-- **`requirements.txt`:** `lca_algebraic` was replaced by `lca_algebraic_bw25==1.4.1` + `brightway25==1.1.1`, which is what the old `rewind_env` actually ran. Only imports and these two scripts were tested, not the full pipeline.
-- **ecoinvent licence:** the new CSVs contain impact scores derived from ecoinvent. Can they go into the public repo or Zenodo?
+- **NUTS3 boundaries:** the new summary uses the 2016 NUTS file (which includes the UK). `generate_paper_figures.py` still uses the 2024 file, which has no UK regions. (not important if we are not regenerating maps).
+
+- **ecoinvent licence:** the new CSVs contain impact scores derived from ecoinvent, in case of any licensing stuff. 
